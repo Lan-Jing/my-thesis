@@ -83,7 +83,7 @@ Plasma存储将其集群架构单独实现为Manager进程，多个进程以及�
 
 \section{基于套接字的Plasma通信机制}
 
-Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Redis服务器获得对象处在的目标节点后，Manager会逐一尝试建立Socket连接，并拉取数据。
+Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Redis服务器获得对象处在的目标节点后，Manager会逐一尝试建立套接字连接，并拉取数据。
 其通信机制如\autoref{fig:sock_protocol}所示：
 
 \begin{figure}[h] 
@@ -102,6 +102,7 @@ Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Re
 \section{Plasma存储和传输基准测试}
 
 为了分析Plasma存储运行在超算上存在的性能瓶颈，得到可能的优化方向，我们在天河高性能集群上对Redis和Plasma进行了存储和传输数据的性能测试。
+通信性能测试以IPoIB机制运行在两节点的Mellanox Infiniband网卡上。
 
 \subsection{存储性能测试}
 
@@ -125,7 +126,7 @@ Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Re
 如\autoref{fig:local_bench}所示，Plasma单机存储架构的综合性能优于Redis。Plasma和Redis的“put”操作并不相同：对于前者，这一语义实际上是用户通过
 调用创建（Create）操作一段分配内存空间，然后将数据对象拷贝到该空间，最终释放（Release）并封装（Seal）对象。可以看到，由于复杂的处理过程，
 Plasma在这一操作上有稍高的延迟。由于Plasma通过MMAP机制，在读取操作上支持了零拷贝特性，用户仅需通过IPC接收固定大小的文件描述符，因而在任何数据大小上都具有相似的性能。
-相反，Redis使用IPC传输实际数据给用户进程。因此随着数据量增大，Plasma将对Redis具有数量级的性能优势。Plasma和Redis在删除上均拥有常数时间复杂度。
+相反，Redis使用IPC传输实际数据给用户进程。因此随着数据量增大到1M，Plasma将对Redis有20倍的性能优势。Plasma和Redis在删除上均拥有常数时间复杂度。
 
 \subsection{数据传输测试}
 
@@ -139,8 +140,8 @@ Plasma在这一操作上有稍高的延迟。由于Plasma通过MMAP机制，在�
     \label{fig:remote_bench}
 \end{figure}
 
-如\autoref{fig:remote_bench}所示，Plasma在远程操作上的吞吐能力比较显著地劣于Redis，特别是在数据规模较大的时候。虽然，两者实际完成的语义很不相同——
-Plasma需要先获取对象在集群中的位置，这本身就将访问一次Redis服务器。另外，Plasma发起一次拉取操作包含了一次本地Create操作，也将产生额外的延迟。此外，
-Plasma一次仅以4kb为单位传输数据，也可能导致在大数据上性能明显不如Redis。然而，不论是Redis还是Plasma，都远远未能充分利用天河超算集群使用的Infiniband高速网络，
-特别是在较大数据的传输上，使用TCP/IP协议进行数据传输所导致的大量内存拷贝，不仅对服务器CPU产生了较大的压力，也导致网络的带宽远远未能充分利用。这一性能缺口在
-Plasma驱动Ray框架执行分布式训练等重负载任务时将会变得非常显著。总结来说，基准测试的结果驱使我们探索Plasma对原生RDMA通信的支持。
+如\autoref{fig:remote_bench}所示，Plasma在远程操作上的吞吐能力比较显著地劣于Redis，在1M大小数据上前者有3.6倍的传输延迟。虽然，两者实际完成的语义很不相同——
+Plasma需要先获取对象在集群中的位置，这本身就将访问一次Redis服务器。另外，Plasma发起一次拉取操作包含了一次本地Create操作，也将产生额外的延迟。而且，
+Plasma一次仅以4kb为单位传输数据，也是大数据上传输性能明显不如Redis的原因。然而，从我们的实验结果总结来看，不论是Redis还是Plasma都存在明显的性能提升空间：
+它们均不能很好地利用超算网络的低延迟和高带宽。特别是支撑分布式计算框架的Plasma，在较大数据的传输上具有明显的性能劣势，这是原实现没有解决的问题。因此，
+这一观察促使我们基于超算网络对Plasma的数据传输机制进行针对性优化。
