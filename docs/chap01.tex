@@ -103,7 +103,7 @@ Infiniband标准实现了链路层的容错机制，这意味着通常意义上�
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.6\textwidth]{image/chap01/qp.png}
-	\caption{队列对示意图}
+	\caption{队列对（QP）示意图}
 	\label{fig:qp}
 \end{figure}
 
@@ -163,7 +163,7 @@ Infiniband网络标准和RDMA技术最早应用于高性能计算（HPC）领域
 
 \begin{enumerate}
 	\item 我们通过实验分析了原Plasma实现在超算集群上的存储和网络性能，验证了其无法充分利用Infiniband高速网络，从而证明了使用RDMA技术优化Plasma数据传输的可行性。
-	\item 我们针对小型数据和分布式训练中常见的大型数据，分别实现了基于双边和单边通信的传输机制。针对大数据，单边通信将实现用户态的零拷贝特性，从而降低了CPU数据拷贝而导致的负载和占用时间。
+	\item 我们针对小对象数据和分布式训练中常见的大对象数据，分别实现了基于双边和单边通信的传输机制。针对大对象，单边通信将实现用户态的零拷贝特性，从而降低了CPU数据拷贝而导致的负载和占用时间。
 	\item 我们基于消息传递接口MPI实现了分布式、可扩展的数据传输性能测试，比较了优化实现和原实现在各个数据大小上的性能。并且通过实验，我们确定了机制在选择传输方式时的最佳方案，从而获得了最优的整体性能。
 \end{enumerate}
 
