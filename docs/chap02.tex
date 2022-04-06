@@ -19,8 +19,8 @@
 
 \textbf{Plasma工作机制：}
 Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fetch}\footnote{\url{https://docs.ray.io/en/latest/ray-contribute/whitepaper.html}}
-展示了Ray驱动Plasma对象存储的基本机制：当Ray任务需要获取一个对象x以执行任务时，它将调用“ray.get”方法。如果该对象存放在本节点的Plasma存储中，后者将通过进程间通信（IPC）将对象传递给任务进程。否则，
-它首先需要以下图所示从其他节点拉取数据：
+展示了Ray驱动Plasma对象存储的基本机制：当Ray任务需要获取一个对象x以执行任务时，它将调用“ray.get”方法获取对象。如果该对象存放在本节点的Plasma存储中，后者将通过进程间通信（IPC）将对象传递给任务进程。否则，
+它首先需要以下图所示的方式从其他节点拉取数据：
 
 \begin{enumerate}
     \item 当前的Ray实现通过“拥有（Ownership）”机制管理对象的存储位置。Plasma向拥有该数据的进程（Owner）查询数据在集群中的位置。
@@ -36,7 +36,7 @@ Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fet
 \end{figure}
 
 值得注意的是，由于对象存储之间、对象存储和任务进程之间的通信，这一机制存在较大的固定延迟，从而在传输小数据时性能相对不佳。因此，现在的Ray实现中仅有大于100KiB大小的对象通过Plasma对象存储实现集群共享——
-任务进程将更小的数据直接存放在进程的预留空间内，并将这些数据通过内嵌（inline）在RPC调用的参数中实现传递。这一实现策略指引我们在接下来的性能测试和分析中关注Plasma在大对象传输中的性能瓶颈。
+任务进程将更小的数据直接存放在进程的预留空间内，并通过将这些数据内嵌（inline）在RPC调用的参数中实现传递。这一实现策略指引我们在接下来的性能测试和分析中关注Plasma在大对象传输中的性能瓶颈。
 
 \section{Plasma架构分析}
 
