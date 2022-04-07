@@ -31,13 +31,13 @@
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.7\textwidth]{image/chap04/server_block.png}
+	\includegraphics[width=0.7\textwidth]{image/chap04/server_block.pdf}
 	\caption{天河CPU服务器硬件拓扑}
 	\label{fig:server_block}
 \end{figure}
 
 需要注意的是，以太网卡和IB网卡分别挂在两个CPU的PCI-E Switch上，因而IB网卡只有在访问本NUMA节点的一半内存时拥有最佳性能——而访问远离它的CPU所控制的一半内存将会有
-较大的性能损耗（\autoref{fig:server_block}中\textbf{红色访存路线}）。这一特性对基于RDMA的网络通信性能有明显的影响，因此在实验中需要相应调整运行配置。
+较大的性能损耗（\autoref{fig:server_block}中\textit{红色访存路线}）。这一特性对基于RDMA的网络通信性能有明显的影响，因此在实验中需要相应调整运行配置。
 
 \subsection{软件环境简介}
 
@@ -58,14 +58,46 @@
 		 & gcc@9.3.0 & 编译Redis和Plasma \\
         \midrule
     	\multirow{2}{*}{测试软件} & openmpi@4.1.1 & 编译基于MPI的多节点性能测试 \\
-    	 & numactl@2.0.14 & 控制MPI进程在NUMA架构下的绑核运行 \\
+		& hwloc@2.5.0 & 查看服务器的NUMA拓扑结构 \\
+		& numactl@2.0.14 & 控制MPI进程在NUMA架构下的绑核运行 \\
         \bottomrule
     \end{tabular}
     \label{tab:software_config}
 \end{table}
 
-\section{NUMA架构对存储性能的影响}
+\section{NUMA架构下的Plasma存储测试}
 
-\section{协议性能测试}
+\textbf{跨NUMA节点访存对性能测试的影响：}上一章节中提到了天河高性能集群存在的NUMA访问架构。IB网卡在NUMA架构中，对“远端”CPU所管理的内存发起内存访问需要通过两个CPU之间的UPI互联（The Intel Ultra Path Interconnect，\autoref{fig:server_block}中间\textit{蓝色连接}），
+因而无法获得最优的访存延迟和带宽，对Plasma本地存储的性能产生较大的不利影响。由于Plasma传输数据前首先会（在发送端）访问或者（在接收端）创建内存对象，因而会进一步影响Plasma跨节点数据传输的延迟和吞吐能力。
+所以，为了获得最佳的传输测试结果，我们将首先通过简单的绑核以优化Plasma的本地存储性能。
 
-\section{结果分析}
+在天河高性能服务器中，通过hwloc软件提供的lstopo命令可以查看IB网卡在服务器NUMA架构中所处在的位置：以太网卡挂载在NUMA节点0上，而IB网卡挂载在NUMA节点1上。
+这样，我们能通过numactl命令限制plasma\_store和plasma\_manager进程运行在NUMA节点1，从而避免IB网卡的跨NUMA节点访存。
+
+\textbf{绑核性能测试：}为了展示绑核对访存性能的影响，我们分别在绑核与未绑核的情况下测试了Plasma本地存储操作的性能，并进行了对比。结果如\autoref{fig:numa}所示。很显然，不论是本地读还是本地写
+使用绑核操作后Plasma的程序性能都有了相当明显的提升：不过，绑核运行时的写入性能随着数据增大逐渐下降，最后和不绑核时持平。可以看到，在写入较小对象时使用绑核能获得显著的性能提升，此时绑核的Plasma进程可以获得1.5倍的吞吐能力；
+在读取和删除对象操作上，绑核在所有数据大小上都有显著的优化效果，其中读取操作的吞吐率增加到原来的至多1.55倍，删除操作的吞吐率增加到原来的至多5倍。
+
+\begin{figure}[h]
+    \begin{subfigure}{0.33\textwidth}
+        \includegraphics[width=\textwidth]{image/chap04/put.png}
+        \caption{Put}
+    \end{subfigure}
+    \begin{subfigure}{0.33\textwidth}
+        \includegraphics[width=\textwidth]{image/chap04/get.png}
+        \caption{Get}
+    \end{subfigure}
+    \begin{subfigure}{0.33\textwidth}
+        \includegraphics[width=\textwidth]{image/chap04/del.png}
+        \caption{Delete}
+    \end{subfigure}
+    \caption{绑核对Plasma常见操作吞吐影响}
+    \label{fig:numa}
+\end{figure}
+
+由于本地访存的延迟大大降低，且传输过程包括了本地访存操作，因此绑核情况下的多节点传输测试更能够体现出基于RDMA的网络协议在传输性能上的优势。
+在之后的性能测试中，基于套接字以及RDMA的传输协议都将以绑核状态运行。
+
+\section{Plasma网络协议测试}
+
+\section{实验结果分析}
