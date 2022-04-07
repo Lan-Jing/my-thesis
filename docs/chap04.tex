@@ -42,7 +42,7 @@
 \subsection{软件环境简介}
 
 \autoref{tab:software_config}展示了本章节各性能测试所运行的软件环境。操作系统一栏展示了天河高性能集群使用的Linux操作系统版本；软件依赖指的是成功编译出可正常执行
-的Plasma程序所需要的前置软件；测试软件则表示为了编译基准测试程序、运行测试程序所需要的前置软件。软件名后的数字串分别表示这些软件的版本。
+的Plasma程序所需要的前置软件；测试软件则表示为了编译基准测试程序、运行测试程序所需要的前置软件。软件名后的数字串表示这些软件的版本。
 
 \begin{table}[h]
     \centering
@@ -75,23 +75,25 @@
 这样，我们能通过numactl命令限制plasma\_store和plasma\_manager进程运行在NUMA节点1，从而避免IB网卡的跨NUMA节点访存。
 
 \textbf{绑核性能测试：}为了展示绑核对访存性能的影响，我们分别在绑核与未绑核的情况下测试了Plasma本地存储操作的性能，并进行了对比。结果如\autoref{fig:numa}所示。很显然，不论是本地读还是本地写
-使用绑核操作后Plasma的程序性能都有了相当明显的提升：不过，绑核运行时的写入性能随着数据增大逐渐下降，最后和不绑核时持平。可以看到，在写入较小对象时使用绑核能获得显著的性能提升，此时绑核的Plasma进程可以获得1.5倍的吞吐能力；
-在读取和删除对象操作上，绑核在所有数据大小上都有显著的优化效果，其中读取操作的吞吐率增加到原来的至多1.55倍，删除操作的吞吐率增加到原来的至多5倍。
+使用绑核操作后Plasma的程序性能都有了相当明显的提升：可以看到，在写入较小对象时使用绑核能获得显著的性能提升，此时绑核的Plasma进程可以获得1.5倍的吞吐能力；不过，绑核运行时的写入性能随着数据增大逐渐下降，
+最后和不绑核时持平。在读取和删除对象操作上，绑核在所有数据大小上都有显著的优化效果，其中读取操作的吞吐率增加到原来的至多1.55倍，删除操作的吞吐率增加到原来的至多5倍。
 
 \begin{figure}[h]
-    \begin{subfigure}{0.33\textwidth}
+    \begin{subfigure}{0.49\textwidth}
         \includegraphics[width=\textwidth]{image/chap04/put.png}
         \caption{Put}
     \end{subfigure}
-    \begin{subfigure}{0.33\textwidth}
+    \begin{subfigure}{0.49\textwidth}
         \includegraphics[width=\textwidth]{image/chap04/get.png}
         \caption{Get}
     \end{subfigure}
-    \begin{subfigure}{0.33\textwidth}
+	\\
+	\centering
+    \begin{subfigure}{0.5\textwidth}
         \includegraphics[width=\textwidth]{image/chap04/del.png}
         \caption{Delete}
     \end{subfigure}
-    \caption{绑核对Plasma常见操作吞吐影响}
+    \caption{绑核对Plasma常见操作吞吐率的影响}
     \label{fig:numa}
 \end{figure}
 
@@ -99,5 +101,21 @@
 在之后的性能测试中，基于套接字以及RDMA的传输协议都将以绑核状态运行。
 
 \section{Plasma网络协议测试}
+
+针对Plasma通过以太网络传输数据所导致的性能瓶颈，我们设计了原生支持RDMA通信机制的数据传输协议。并且，针对可能出现的小型对象，我们设计了使用预注册缓冲区的双边通信协议；并针对可能出现的大型对象，
+设计了具有完全零拷贝特性的单边传输协议。从而优化的Plasma通过混合两种机制在不同大小的数据都能取得较好的吞吐能力。在Plasma优化实现的性能测试中，我们将测试IPoIB机制、双边通信以及单边通信在各个数据大小
+上的传输性能，一方面验证RDMA机制在性能上的优越性，另一方面可以确定混合机制的关键决策阈值，从而获得最佳的综合性能。
+
+我们实现了基于MPI编程范式的多进程网络性能测试。该测试能够在一次运行中对Plasma内存存储的主要操作（本地创建/读取/删除和远程读取）进行性能测量。
+该测试采用主-从架构，能够支持任意多从进程并发传输的测试。其流程如下所示：
+
+\begin{enumerate}
+	\item （0号）主进程阻塞在MPI\_Barrier处，等待（编号为正整数的）从进程创建数据对象。
+	\item 其他进程创建一批数据对象。如果进程编号为N-1，测试Plasma本地操作的性能并输出到日志。
+	\item 所有进程在MPI\_Barrier处同步。之后，主进程通过MPI\_Gather接口，从其他MPI进程处汇集所有内存对象的标识符。
+	\item 主进程以随机顺序向其他进程处发送plasma\_fetch请求，拉取所有数据对象。
+\end{enumerate}
+
+在天河高性能集群上，我们首先对N=2，即点对点拉取数据的情况进行性能测试。三种传输机制的性能指标如下所示：
 
 \section{实验结果分析}
