@@ -20,16 +20,29 @@
     Ray作为面向强化学习等新型计算任务的分布式计算框架，同样存在着上述性能瓶颈。为此，通过设计高效、高性能的通信机制，我们能将现代网络的硬件优势转化为Ray系统整体的性能优势。
     本研究从该框架的核心组件：分布式内存对象数据库Plasma入手，首先测试和分析了其基于以太网和套接字传输数据而导致的性能瓶颈。然后，在高性能集群上，我们提出了一种支持RDMA特性的高吞吐对象传输机制。
     该机制针对大型数据对象，提出了基于单边读语义的传输协议，实现了用户态的内存零拷贝。并且该机制能够在运行时，根据数据大小动态地选择传输协议，以获得最佳性能。进一步，我们基于并行计算范式MPI构造了分布式、可扩展的多节点传输性能测试。
-    在实验中，我们确定了传输协议的最优参数，并且展示了在天河高性能集群上，优化后的内存平台能够在常见大小的对象传输中实现至多7倍的吞吐率提升。
-
+    在实验中，我们确定了传输协议的最优参数，并且展示了在天河高性能集群上，优化后的内存平台在常见大小的对象传输中实现至多7倍于原实现的吞吐率。
 }
 % 中文关键词(每个关键词之间用“，”分开,最后一个关键词不打标点符号。)
 \ckeywords{数据传输，高性能网络，RDMA，键值对数据库，分布式缓存}
 
 \eabstract{
     % 英文摘要及关键词内容应与中文摘要及关键词内容相同。中英文摘要及其关键词各置一页内。
+ 
+    Diverse and heavy computing workloads, including big data processing, large-scale model training, and reinforcement learning (RL),
+    have increasingly drawn attention from the industrial and academic worlds. Distributed computing frameworks (Mapreduce, Spark, Ray, etc.) as the infrastructure
+    recently also gained more attention and applications. Frameworks are responsible for scheduling users' tasks and efficiently utilizing 
+    the physical resources of the clusters. The growing need for computation that comes with the mentioned workloads challenges the performance of these machines. On the one hand, 
+    high-performance computing (HPC) clusters are replacing the traditional, cheap ones to handle intensified computation. These systems have distinct network architecture.
+    With hardware support from smart NICs, HPC machines can directly read/write remote memory for communication.
+    The transmission technique called Remote Direct Memory Access (RDMA) presents low occupancy, low latency, and high bandwidth as strengths that Ethernet doesn't own. On the other hand, the underlying software
+    faces severe performance problems as well: most recent distributed computing frameworks cannot exploit high-performance hardware, especially high-speed networks with RDMA.
 
-    
+    The above performance gap exists in Ray, a novel framework targeting emerging computing tasks such as RL. To handle this, we manage to turn advanced features of RDMA into
+    better performance, by introducing a novel, high-performance transmission scheme. Our work focuses on Ray's core component: distributed in-memory object store named Plasma. We first identify the network bottleneck of Plasma
+    through benchmarking and analysis. Then, we propose this scheme with hybrid transfer protocols.
+    Besides the usual send/recv protocol, it has an extra one-sided read protocol for transferring
+    large objects with zero-copy. For the best performance, we further implement a simple yet effective strategy to switch between the send-based and read-based protocols, given the sizes of the objects. Finally, we construct a distributed, scalable
+    benchmark for testing the transmission overhead. Experiments demonstrate that, with the best-selected parameter, our improved memory store can achieve up to 7x throughput on our Tianhe HPC cluster.
 }
 % 英文文关键词(每个关键词之间用,分开, 最后一个关键词不打标点符号。)
 \ekeywords{data transfer, high-performance network, RDMA, key-value database, distributed memory}
