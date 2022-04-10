@@ -23,7 +23,7 @@
 这通常需要大量时间和精力；另外，使用这些范式将导致程序和功能的强耦合——编程者很可能不得不重新编写代码来更新程序的逻辑。因此，现代分布式计算框架通常承担了上述硬件管理的角色，
 并针对目标任务类型，为用户设计尽可能少、但简单易用的功能接口，来降低集群的使用难度。早期的分布式计算框架，例如Mapreduce\cite{dean2008mapreduce}和Spark\cite{zaharia2010spark}，都是面向大规模数据分析这一类任务而设计的。然而，近些年
 以强化学习、复杂工作流等为代表的复杂计算需求，需要得到更灵活的框架支持。加州大学伯克利分校RISELab实验室提出的Ray\cite{moritz2018ray}和芝加哥大学Globus实验室提出的Parsl\cite{babuji2019parsl}是其中两个典型。这些框架
-吸取了云计算领域“函数即服务（Function as a Service, FaaS）”的设计思想，能够细粒度地以函数为单位将任务调度到集群上执行，同时依然对用户隐藏绝大部分实现细节。Ray通过分布式内存对象存储Plasma\footnote{\url{https://arrow.apache.org/docs/python/plasma.html}}，
+吸取了云计算领域“函数即服务（Function as a Service, FaaS）”的设计思想，能够细粒度地以函数为单位将任务调度到集群上执行，同时依然对用户隐藏绝大部分实现细节。Ray通过分布式内存对象存储Plasma\cite{plasma}，
 实现了框架完全自主的集群内存管理，让用户可以专注于实现功能逻辑，而无需担心数据的存放和移动。Ray在保持易用性的前提下，极大地提升了计算框架的灵活性，用户只需要修改几行代码就能将单进程程序扩展到整个集群，
 进而实现分布式机器学习等复杂模型。
 
@@ -46,7 +46,7 @@
 
 分布式计算框架是一种复杂的平台软件。在底层，它通过实现任务调度、并发执行、内存管理等基本组件，向用户透明地提供分布式计算的功能；在应用层，它通过设计和规范一系列接口，帮助用户高效地运行特定任务：例如大数据分析（Mapreduce、Spark），
 分布式机器学习（Ray）等等。Ray是近年来最受关注的分布式计算框架，它以函数为单位调度任务执行，完全自主地管理内存移动，并且支持异步执行。借助这一平台，目前社区人员已经实现了机器学习（Ray ML）、强化学习（Ray RLlib）、模型部署（Ray Serve）、工作流（Ray Workflows）
-等上层应用库供用户使用\footnote{\url{https://www.ray.io/}}。同时，用户也可以直接在框架上编写任意程序：使用常见的Python语法构建出完全分布式的计算程序，而且不会有任何表达能力上的限制。
+等上层应用库\cite{ray}供用户使用。同时，用户也可以直接在框架上编写任意程序：使用常见的Python语法构建出完全分布式的计算程序，而且不会有任何表达能力上的限制。
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}[style=sysupython, caption=Ray代码示例]
@@ -99,7 +99,7 @@ Infiniband标准实现了链路层的容错机制，这意味着通常意义上�
 基于超算集群中广泛使用的Mellanox Infiniband架构。
 
 基于RDMA机制的网络编程，目前主流的做法是使用Verbs操作原语\cite{pfister2001introduction}。在Infiniband网络架构中，两端以队列对（Queue Pair，QP）
-\autoref{fig:qp}\footnote{\url{http://hjemmesider.diku.dk/~vinter/CC/Infinibandchap42.pdf}}
+\autoref{fig:qp}\cite{pfister2001introduction}
 为基本模型进行通信，一次简单的发送-接收可以描述为如下步骤：
 
 \begin{figure}[h]
@@ -138,12 +138,12 @@ Infiniband网络标准和RDMA技术最早应用于高性能计算（HPC）领域
 集群规模的共享内存逐渐成为可能：Neugebauer\cite{neugebauer2018understanding}发现IB网络的通信延迟和PCIe总线上的通信延迟处于一个数量级，这说明网络已经不再是集群通信的性能瓶颈。以RDMA为核心，HPC社区和分布式系统社区均
 提出了一些分布式共享内存的实现方案，从而以较低的性能代价连接起整个集群的内存空间：前者包括GasNet\cite{bonachea2017gasnet}，OpenSHMEM\cite{chapman2010introducing}等支持分区全局地址空间（PGAS）计算的中间件；
 后者以FaRM\cite{dragojevic2014farm}，CoRM\cite{taranov2021corm}等系统为代表。
-这些研究的共同焦点是分布式的事务机制——除了本地内存的读-写冲突之外，还需要解决远端机器读写和本地访存之间的数据冲突。此外，也有研究避开了细粒度的内存管理，如去中心化、可扩展的
-分布式页表系统Infiniswap\cite{gu2017efficient}，就通过粗粒度的内存页交换处理集群中存在的物理内存使用不均的问题。
+这些研究的共同焦点是分布式的事务机制——除了本地内存的读-写冲突之外，还需要解决远端机器读写和本地访存之间的数据冲突。此外，也有研究避开了细粒度的内存管理，例如去中心化、可扩展的
+分布式页表系统Infiniswap\cite{gu2017efficient}，就通过粗粒度的内存页交换，较好地解决了集群中存在的物理内存使用不均的问题。
 
 \subsubsection{高并发内存系统}
 
-在另一个方向上，研究人员希望将RDMA低延迟、高并发的特性直接变为应用的性能——内存键值对（key-value）数据库是一个合适的领域。Redis\footnote{\url{https://redis.io/}}，Memcached\cite{jose2011memcached}等内存数据库通常被用作一种高速缓存，
+在另一个方向上，研究人员希望将RDMA低延迟、高并发的特性直接变为应用的性能——内存键值对（key-value）数据库是一个合适的领域。Redis\cite{redis}，Memcached\cite{jose2011memcached}等内存数据库通常被用作一种高速缓存，
 其他机器对数据库的访问也主要以并发读取为主，因此非常适合使用RDMA技术进行优化，特别是使用单边读等通信方式优化单机并发能力\cite{mitchell2013using}。不过，基于单边操作的读取机制难以应对高强度并发中的数据冲突（Collision）问题，
 需要配合更优的哈希函数\cite{pagh2004cuckoo}等其他优化手段才能获得较好的优化效果。因此近期的工作更是提出了双边语义和单边语义混合的通信机制\cite{kalia2014using}\cite{su2017rfp}，从而在CPU负载、并发能力和编程难度上都获得较好的结果。
 总体来说，在过去的一段时间，针对应用场景不同，研究人员已经提出了众多具有不同性能特征的RDMA通信范式\cite{li2021hatrpc}。
@@ -159,7 +159,7 @@ Infiniband网络标准和RDMA技术最早应用于高性能计算（HPC）领域
 
 \begin{enumerate}
 	\item 目前RDMA编程仍然是极为“小众”的技术，如何能在有限的资料和现有研究帮助下实现高性能的网络通信机制。
-	\item 如何在尽可能不破坏项目整体结构的情况下，为Plasma提供原生RDMA通信机制。这要求优化后的程序可以无缝地运行在以太网和Infiniband两种网络架构上。
+	\item 如何在尽可能不破坏项目整体结构的情况下，为Plasma提供原生RDMA通信机制。这要求优化后的程序可以无缝地运行在以太网和Infiniband两种网络硬件架构上。
 	\item 针对Ray框架及其计算任务中可能出现的大小不一的数据，如何实现该机制使得Plasma能够在尽可能多的大小范围内都能获得最优的网络性能。
 \end{enumerate}
 
@@ -168,7 +168,7 @@ Infiniband网络标准和RDMA技术最早应用于高性能计算（HPC）领域
 \begin{enumerate}
 	\item 我们通过实验分析了原Plasma实现在超算集群上的存储和网络性能，发现了其无法充分利用Infiniband高速网络的问题，从而证明了使用RDMA技术优化Plasma数据传输的可行性。
 	\item 我们针对小对象数据和分布式训练中常见的大对象数据，分别实现了基于双边和单边通信的传输机制。针对大对象，单边通信将实现用户态的零拷贝特性，从而降低了CPU数据拷贝而导致的负载和占用时间。
-	\item 我们基于消息传递接口MPI实现了分布式、可扩展的数据传输性能测试，比较了优化实现和原实现在各个数据大小上的性能。并且通过实验，我们确定了机制在选择传输方式时的最佳方案，从而在所有常见大小
+	\item 我们基于消息传递接口MPI实现了分布式、可扩展的数据传输性能测试，比较了优化实现和原实现在各个数据大小上的性能。并且通过实验，我们确定了RDMA传输机制选择传输协议的最佳方案，从而在所有常见大小
 	的数据传输上，我们的实现均显著优于原实现。
 \end{enumerate}
 
