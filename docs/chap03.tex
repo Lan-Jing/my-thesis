@@ -1,8 +1,8 @@
 \chapter{基于RDMA的Plasma数据传输机制实现}
 \label{cha:implementation}
 
-在本章节中，我们将基于上一章对Plasma架构和性能的分析，提出并实现一种适应各大小数据的高吞吐数据传输机制。由于跨节点通信完全由Manager进程完成，因此在本章节中，
-如无特殊说明，进程均指的是Manager进程。
+在本章节中，我们将基于上一章对Plasma架构和性能的分析，提出并实现一种适应各大小数据的高吞吐数据传输机制。Plasma中的跨节点通信单独实现在\autoref{sec:plasma_cluster}描述的
+Manager进程中。因此在本章节中，如无特殊说明，进程均指的是Manager进程。
 
 \section{连接的建立和复用}
 \label{sec:ib_con}
@@ -147,7 +147,7 @@ typedef struct {
   struct ibv_mr *read_mr;
   uint8_t *ib_recv_buf; // send/recv buffers are pre-pinned
   uint8_t *ib_send_buf;
-  uint8_t *ib_read_buf; // read buffer is pinned and registered on-the-fly
+  uint8_t *ib_read_buf; // read buffer is on-the-fly pinned and registered
   int64_t bufsize;
 
   uint32_t rkey;
