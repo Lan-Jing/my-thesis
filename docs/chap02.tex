@@ -15,7 +15,7 @@
 \textbf{Ray架构简介：}
 一个Ray集群由主节点（Head Node）和工作节点（Worker Node）构成。主节点上运行驱动（Driver）进程，即编写了Ray函数和其他逻辑（如\autoref{sec:background}中代码片段）的Python程序；另外，还运行着全局控制存储（Global Control Store，GCS）：
 该数据库存放着Ray集群范围的关键配置信息。此外，所有节点都运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器和对象存储构成——调度器负责将Driver进程解析出的任务调度到集群的合适节点中运行；
-对象存储就是Plasma数据库，存放着计算所产生的数据——包括任务运行所依赖的输入数据和所产生的输出数据。
+图中的对象存储（Object Store）就是Plasma数据库，存放着计算所产生的数据——包括任务运行所依赖的输入数据和所产生的输出数据。
 
 \textbf{Plasma工作机制：}
 Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fetch}\cite{ray_whitepaper}

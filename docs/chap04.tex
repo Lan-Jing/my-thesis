@@ -155,24 +155,25 @@ Redis在访存上更依赖于操作系统，因此控制Redis进程的NUMA绑核
 
 \textbf{与Redis对比：}在确认了Plasma最佳的混合传输策略之后，我们可以将优化的Plasma实现和Redis作性能对比。两者传输各个大小数据的延迟如\autoref{fig:redis_small}和\autoref{fig:redis_big}所示。
 和\autoref{sec:bench}不同，经过RDMA传输优化后的Plasma，已经能在常见大小的对象传输上获得比Redis
-显著更优的性能。然而还需要强调的是，Plasma在传输测试中所完成的操作，明显要比Redis更多——Plasma每次拉取对象到本地内存中，都会再次创建该对象、分配等大的内存空间、拷贝数据并封存；而Redis在性能测试中并不会这么做。总结来说，这是Plasma为了支持Ray分布式缓存、分布式访问所需的额外代价。
-然而，通过借助RDMA的硬件优势，我们优化了Plasma内存存储的传输机制，使其同时拥有了如下技术优势：
+显著更优的性能。然而还需要强调的是，Plasma在传输测试中所完成的操作，要比Redis更多——Plasma每次拉取对象到本地内存中，都会创建该对象的一个副本：分配相同大小的内存空间、拷贝数据并且封存；而Redis在性能测试中并不会这么做。总结来说，这是Plasma为了支持Ray分布式缓存、分布式访问所需的额外代价。
+然而，通过借助RDMA的硬件优势，我们优化了Plasma内存存储的传输机制，使其在高性能集群上同时拥有了以下技术优势：
 
 \begin{enumerate}
-    \item 支撑分布式计算框架Ray的集群内存管理，相比Redis数据库，Plasma是分布式、可扩展的。
-    \item 即便是实现了分布式内存对象存储，Plasma在任意单节点上的性能仍然显著地优于Redis数据库。
+    \item Plasma对象存储具有分布式、可扩展的功能特性：在完成对象数据传输后，Plasma会将其保存为本地副本，从而很好地支持多节点并发访问。
+    在功能上，我们实现的Plasma相比Redis更能满足AI计算框架对数据管理和访问的需求。
+    \item 我们优化的Plasma实现具有低延迟的性能特性：即便实现了分布式内存对象存储，Plasma在跨节点数据访问上的延迟仍然显著地低于Redis数据库。
 \end{enumerate}
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{image/chap04/redis_small.png}
-	\caption{Redis和Plasma在小对象上的传输延迟}
+	\caption{Redis和Plasma（优化后）在小对象上的传输延迟}
 	\label{fig:redis_small}
 \end{figure}
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{image/chap04/redis_big.png}
-	\caption{Redis和Plasma在大对象上的传输延迟}
+	\caption{Redis和Plasma（优化后）在大对象上的传输延迟}
 	\label{fig:redis_big}
 \end{figure}
