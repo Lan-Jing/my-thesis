@@ -160,7 +160,7 @@ Redis在访存上更依赖于操作系统，因此控制Redis进程的NUMA绑核
 
 \begin{enumerate}
     \item Plasma对象存储具有分布式、可扩展的功能特性：在完成对象数据传输后，Plasma会将其保存为本地副本，从而很好地支持多节点并发访问。
-    在功能上，我们实现的Plasma相比Redis更能满足AI计算框架对数据管理和访问的需求。
+    在功能上，我们实现的Plasma相比Redis更能满足计算框架对数据管理和访问的需求。
     \item 我们优化的Plasma实现具有低延迟的性能特性：即便实现了分布式内存对象存储，Plasma在跨节点数据访问上的延迟仍然显著地低于Redis数据库。
 \end{enumerate}
 

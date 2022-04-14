@@ -1,8 +1,8 @@
 \chapter{Plasma分布式内存存储架构和性能分析}
 
-\section{Ray架构简介}
+\section{Ray与Plasma简介}
 
-\autoref{fig:ray_arch}\cite{ray_whitepaper}
+\autoref{fig:ray_arch}
 展示了分布式计算框架Ray的整体架构，并展示了分布式内存对象存储Plasma在其中的位置和角色：
 
 \begin{figure}[h] 
@@ -14,18 +14,18 @@
 
 \textbf{Ray架构简介：}
 一个Ray集群由主节点（Head Node）和工作节点（Worker Node）构成。主节点上运行驱动（Driver）进程，即编写了Ray函数和其他逻辑（如\autoref{sec:background}中代码片段）的Python程序；另外，还运行着全局控制存储（Global Control Store，GCS）：
-该数据库存放着Ray集群范围的关键配置信息。此外，所有节点都运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器和对象存储构成——调度器负责将Driver进程解析出的任务调度到集群的合适节点中运行；
-图中的对象存储（Object Store）就是Plasma内存存储，存放着计算所产生的数据——包括任务运行所依赖的输入数据和所产生的输出数据。
+该数据库存放着Ray集群范围的关键配置信息。此外，所有节点都运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器（Scheduler）和对象存储Plasma构成——调度器负责将Driver进程解析出的任务调度到集群的合适节点中运行；
+Plasma内存存储存放着计算产生的数据——包括任务运行依赖的输入数据和产生的输出数据。
 
 \textbf{Plasma工作机制：}
 Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fetch}\cite{ray_whitepaper}
-展示了Ray驱动Plasma对象存储的基本机制：当Ray任务需要获取一个对象x以执行任务时，它将调用“ray.get”方法获取对象。如果该对象存放在本节点的Plasma存储中，后者将通过进程间通信（IPC）将对象传递给任务进程。否则，
-它首先需要以下图所示的方式从其他节点拉取数据：
+展示了Ray驱动Plasma对象存储的基本机制：当Ray任务需要一个对象x以执行任务函数时，它将调用“ray.get”方法获取对象。如果该对象已经存在于本节点的Plasma存储中，Plasma将通过进程间通信（IPC）将对象传递给任务进程。否则，
+它首先需要以\autoref{fig:object_fetch}所示的方式，先从其他节点拉取数据到本地：
 
 \begin{enumerate}
-    \item 当前的Ray实现通过“拥有（Ownership\cite{wang2021ownership}）”机制管理对象的存储位置。Plasma向拥有该数据的进程（Owner）查询数据在集群中的位置。
+    \item 当前，Ray通过“拥有（Ownership\cite{wang2021ownership}）”机制管理对象的存储位置。Plasma向拥有该数据的进程（Owner）查询数据在集群中的位置。
     \item Plasma向该节点的另一个（位于节点2的）Plasma进程发起对象请求。
-    \item Plasma将数据传输并保存到本地。
+    \item Plasma将数据传输到本地并保存。
 \end{enumerate}
 
 \begin{figure}[h] 
@@ -53,7 +53,8 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
 \section{Plasma架构分析}
 \label{sec:plasma_arch}
 
-Plasma分布式存储架构由多个进程组成。通过将控制面、数据面上的任务解耦到不同的进程，我们可以较为方便地对其软件架构进行改进。
+除了支持Ray的内存对象管理，Plasma也可以单独构成一个由多个进程组成的缓存集群。
+由于控制面、数据面上的任务解耦到了不同的进程，我们可以较为方便地对其软件架构进行改进。
 \autoref{fig:plasma_arch}展示了Plasma集群的组织结构。
 
 \begin{figure}[h] 
