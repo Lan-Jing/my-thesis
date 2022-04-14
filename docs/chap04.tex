@@ -37,7 +37,7 @@
 \end{figure}
 
 需要注意的是，以太网卡和IB网卡分别挂在两个CPU的PCIe Switch上，因而IB网卡只有在访问本NUMA节点的一半内存时拥有最佳性能——而访问远离它的CPU所控制的一半内存将会有
-较大的性能损耗（\autoref{fig:server_block}中\textit{红色访存路线}）。这一特性对基于RDMA的网络通信性能有明显的影响，因此在实验中需要相应调整运行配置。
+较大的性能损耗（\autoref{fig:server_block}中间访存路线）。这一特性对基于RDMA的网络通信性能有明显的影响，因此在实验中需要相应调整运行配置。
 
 \subsection{软件环境简介}
 

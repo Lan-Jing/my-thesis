@@ -18,12 +18,12 @@
     另一方面，作为基础设施的软件框架，也在面临严峻的性能挑战：当前大多数分布式计算框架仍然缺乏对高性能硬件的支持，特别是无法充分利用集群中的高速网络资源。
     
     Ray作为面向强化学习等新型计算任务的分布式计算框架，同样存在着上述性能瓶颈。为此，通过设计高效、高性能的通信机制，我们能将现代网络的硬件优势转化为Ray系统整体的性能优势。
-    本研究从该框架的核心组件：分布式内存对象数据库Plasma入手，首先测试和分析了其基于以太网和套接字传输数据而导致的性能瓶颈。然后，在高性能集群上，我们提出了一种支持RDMA特性的高吞吐对象传输机制。
+    本研究从该框架的核心组件：分布式内存对象存储Plasma入手，首先测试和分析了其基于以太网和套接字传输数据而导致的性能瓶颈。然后，在高性能集群上，我们提出了一种支持RDMA特性的高吞吐对象传输机制。
     该机制针对大型数据对象，提出了基于单边读语义的传输协议，实现了用户态的内存零拷贝。并且该机制能够在运行时，根据数据大小动态地选择传输协议，以获得最佳性能。进一步，我们基于并行计算范式MPI构造了分布式、可扩展的多节点传输性能测试。
     在实验中，我们确定了传输协议的最优参数，并且展示了在天河高性能集群上，优化后的内存平台在常见大小的对象传输中实现至多7倍于原实现的吞吐率。
 }
 % 中文关键词(每个关键词之间用“，”分开,最后一个关键词不打标点符号。)
-\ckeywords{数据传输，高性能网络，RDMA，键值对数据库，分布式缓存}
+\ckeywords{数据传输，高性能网络，RDMA，键值对存储，分布式缓存}
 
 \eabstract{
     % 英文摘要及关键词内容应与中文摘要及关键词内容相同。中英文摘要及其关键词各置一页内。
@@ -45,4 +45,4 @@
     benchmark for testing the transmission overhead. Experiments demonstrate that, with the best-selected parameter, our improved memory store can achieve up to 7x throughput on our Tianhe HPC cluster.
 }
 % 英文文关键词(每个关键词之间用,分开, 最后一个关键词不打标点符号。)
-\ekeywords{data transfer, high-performance network, RDMA, key-value database, distributed memory}
+\ekeywords{data transfer, high-performance network, RDMA, key-value store, distributed memory}
