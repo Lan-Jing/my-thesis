@@ -44,8 +44,8 @@
 
 \subsection{分布式计算框架}
 
-分布式计算框架是一种复杂的平台软件。在运行时系统层，它通过实现任务调度、并发执行、内存管理等基本组件，向用户透明地提供分布式计算的功能；在应用层，它通过设计和规范一系列接口，帮助用户高效地运行特定任务：例如大数据分析（Mapreduce、Spark），
-视频流处理（Ray），强化学习（Ray，Acme）等等。
+分布式计算框架是一种复杂的平台软件。在运行时系统层，它通过实现任务调度、并发执行、内存管理等基本组件，向用户透明地提供分布式计算的功能；在应用层，它通过设计和规范一系列接口，帮助用户高效地运行特定任务：例如大数据分析（Mapreduce\cite{dean2008mapreduce}、Spark\cite{zaharia2010spark}），
+视频流处理（Ray\cite{moritz2018ray}），强化学习（Ray，Acme\cite{hoffman2020acme}）等等。
 
 \begin{figure}[h]
 	\begin{minipage}{0.49\linewidth}
@@ -59,25 +59,26 @@
 	\begin{minipage}{0.49\linewidth}
 		\centering
 		\begin{subfigure}{\textwidth}
-		\includegraphics[width=0.8\textwidth]{image/chap01/ray.png}
+		\includegraphics[width=\textwidth]{image/chap01/ray.png}
 		\caption{Video Processing（Ray）}
 		\label{fig:video_processing}
 	\end{subfigure}
 	\end{minipage}
+	\caption{两种分布式计算应用}
 	\label{fig:framework}
 \end{figure}
 
 Mapreduce是Google提出的分布式计算框架。在该框架中，基于Map和Reduce两种抽象的计算模式，用户可以实现大数据处理逻辑。Mapreduce的运行时如\autoref{fig:mapreduce}所示：
-在Map阶段，Mapreduce首先派生出一些Mapper进程，从分布式文件系统读入文件数据，并做切分。之后，派生出的Reducer进程读入被切分的中间文件，执行汇总、求值等计算操作，最后将结果输出到文件系统中。
-在两个阶段中间，Reducer进程并发地从多个节点读入Mapper产生的中间文件，然后并行地执行计算逻辑——Mapreduce框架通过实现该（Shuffle）过程，向用户提供分布式计算能力。
+在Map阶段，用户程序派生（fork）的Mapper进程，从分布式文件系统读入文件数据，并做切分。之后，派生出的Reducer进程读入被切分的中间文件，执行汇总、求值等计算操作，最后将结果输出到文件系统中。
+在两个阶段之间，Reducer进程并发地从多个节点读入Mapper产生的中间文件，然后并行地执行计算逻辑——Mapreduce框架通过实现该（Shuffle）过程，向用户提供分布式计算能力。
 
-越发复杂的计算任务和越发严苛的性能追求，催生了诸多分布式计算框架。Mapreduce以文件的方式在计算之间传递数据，因而性能不佳、无法快速迭代计算——为此，Spark引入了不可变的内存数据对象RDD，
-显著提升了计算性能。另外，仅有Map和Reduce两种抽象，Mapreduce的表达能力十分受限——Spark，Ray等后续工作则支持有向无环图（DAG）等动态编排、调度机制，让用户可以更灵活地控制程序的逻辑。
+越发复杂的计算任务和越发严苛的性能追求，催生了诸多分布式计算框架，同时也对框架的支撑机制提出了更多要求。Mapreduce以文件的方式在计算之间传递数据，因而性能不佳、无法快速迭代计算——为此，Spark引入了不可变的内存数据对象RDD，
+并以此组织起基于内存对象的计算模型，显著提升了计算性能。另外，仅有Map和Reduce两种计算抽象，Mapreduce的表达能力十分受限——Spark，Ray等后续工作则支持有向无环图（DAG）等动态任务编排、调度机制，让用户可以更灵活地控制程序的逻辑。
 
-近些年来，Ray，Acme等新型计算框架，旨在支持强化学习、视频流处理等新型计算需求。这类计算通常具有异构特性，系统同时运行着具有多种功能角色的进程。并且，这些进程以较复杂的关系连接起来，共同
-构成完整的计算逻辑。在\autoref{fig:video_processing}展示的视频流处理中，负责解码、处理、输出的不同进程共同构成一个运行时系统。而在强化学习中，模型的优化过程需要交替进行训练和部署测试——
-这两种任务在所需资源、计算强度上都非常不同。
-因此，为了支撑这类计算任务，Ray等计算框架实现了细粒度的任务调度机制，以及对应的数据对象管理机制——使用户在程序逻辑上具有极高的自由度，但依然无需关心数据的存储和传递。
+近些年来，Ray，Acme等新型计算框架，旨在支持强化学习、视频流处理等新型计算需求。这类计算通常具有异构任务特性，系统同时运行着具有多种功能角色的进程。并且，这些进程以较复杂的关系连接起来，共同
+构成完整的计算逻辑。在\autoref{fig:video_processing}所示的视频流系统中，负责解码、处理、输出的任务进程相互协作，共同构成一个实时流处理系统。而在强化学习中，模型的优化过程需要交替进行模型训练和模拟测试——
+这两种任务在资源需求、计算强度上都非常不同。
+因此，为了支撑这类计算任务，Ray等计算框架实现了细粒度的任务调度机制，以及对应的数据对象管理机制——用户能够精确地描述和组织计算任务的逻辑，同时由计算框架负责在集群中存储数据、在任务间传递数据。
 
 % Ray是近年来最受关注的分布式计算框架，它以函数为单位调度任务执行，完全自主地管理数据移动，并且支持异步执行。借助这一平台，目前社区人员已经实现了机器学习（Ray ML）、强化学习（Ray RLlib）、模型部署（Ray Serve）、工作流（Ray Workflows）
 % 等上层应用库\cite{ray}供用户使用。同时，用户也可以直接在框架上编写程序：使用常见的Python语法构建出完全分布式的计算程序，而且不会有任何表达能力上的限制。
@@ -138,7 +139,7 @@ Infiniband标准实现了链路层的容错机制，这意味着通常意义上�
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.6\textwidth]{image/chap01/qp.png}
+	\includegraphics[width=0.8\textwidth]{image/chap01/qp.png}
 	\caption{队列对（QP）示意图}
 	\label{fig:qp}
 \end{figure}

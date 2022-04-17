@@ -1,42 +1,44 @@
 \chapter{Plasma分布式内存存储架构和性能分析}
 
-\section{Ray架构简介}
+\section{Plasma工作机制简介}
 
-\autoref{fig:ray_arch}
-展示了分布式计算框架Ray的整体架构，并展示了分布式内存对象存储Plasma在其中的位置和角色：
+在本段落中，我们将介绍Plasma分布式内存存储的工作机制。并以分布式计算框架Ray为例，我们介绍了Plasma存储如何实现集群内存管理，以支持细粒度的任务调度机制。
 
 \begin{figure}[h] 
     \centering
-    \includegraphics[width=0.6\textwidth]{image/chap02/ray_arch.png}
-    \caption{Ray计算框架}
+    \includegraphics[width=0.7\textwidth]{image/chap02/ray_arch.png}
+    \caption{Plasma与Ray集群框架}
     \label{fig:ray_arch}
 \end{figure}
 
 \textbf{Ray架构简介：}
-一个Ray集群由主节点（Head Node）和工作节点（Worker Node）构成。主节点上运行驱动（Driver）进程，即编写了Ray函数和其他逻辑（如\autoref{sec:background}中代码片段）的Python程序；另外，还运行着全局控制存储（Global Control Store，GCS）：
-该数据库存放着Ray集群范围的关键配置信息。此外，所有节点都运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器（Scheduler）和对象存储Plasma构成——调度器负责将Driver进程解析出的任务调度到集群的合适节点中运行；
+\autoref{fig:ray_arch}展示了Plasma分布式内存存储，以及其在Ray计算集群中的位置。
+Ray集群由一个主节点（Head Node）和多个工作节点（Worker Node）构成。驱动（Driver）进程运行在主节点上，工作（Worker）进程运行在所有节点上。通常，一个进程和集群中的一个CPU核心对应。
+全局控制存储（Global Control Store，GCS）运行在主节点，存放着Ray集群范围的关键配置信息。
+此外，每个节点运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器（Scheduler）和对象存储Plasma构成——调度器负责将Driver进程解析出的任务调度到合适的工作进程中运行；
 Plasma内存存储存放着计算产生的数据——包括任务运行依赖的输入数据和产生的输出数据。
-
-\textbf{Plasma工作机制：}
-Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fetch}\cite{ray_whitepaper}
-展示了Ray驱动Plasma对象存储的基本机制：当Ray任务需要一个对象x以执行任务函数时，它将调用“ray.get”方法获取对象。如果该对象已经存在于本节点的Plasma存储中，Plasma将通过进程间通信（IPC）将对象传递给任务进程。否则，
-它首先需要以\autoref{fig:object_fetch}所示的方式，先从其他节点拉取数据到本地：
-
-\begin{enumerate}
-    \item 当前，Ray通过“拥有（Ownership\cite{wang2021ownership}）”机制管理对象的存储位置。Plasma向拥有该数据的进程（Owner）查询数据在集群中的位置。
-    \item Plasma向该节点的另一个（位于节点2的）Plasma进程发起对象请求。
-    \item Plasma将数据传输到本地并保存。
-\end{enumerate}
 
 \begin{figure}[h] 
     \centering
-    \includegraphics[width=0.6\textwidth]{image/chap02/object_fetch.png}
+    \includegraphics[width=0.75\textwidth]{image/chap02/object_fetch.png}
     \caption{Plasma工作机制}
     \label{fig:object_fetch}
 \end{figure}
 
+\textbf{Plasma工作机制：}
+Plasma对象存储运行在Ray集群的所有节点上。\autoref{fig:object_fetch}\cite{ray_whitepaper}
+展示了Plasma对象存储传递内存对象的基本机制：当Ray工作进程需要对象x作为执行函数的参数时，它将调用“ray.get”方法获取对象。
+如果该对象已经存在于本节点的Plasma存储中，Plasma将通过进程间通信（IPC）将对象传递给任务进程。否则，
+它首先需要以\autoref{fig:object_fetch}所示的方式，先从其他节点拉取数据到本地存储：
+
+\begin{enumerate}
+    \item 请求内存对象在集群中的存储位置。Plasma向拥有该数据的进程（Owner）查询数据在集群中的位置。
+    \item Plasma向该节点的另一个（位于节点2的）Plasma进程发起对象请求。
+    \item Plasma将数据传输到本地并保存。
+\end{enumerate}
+
 \textbf{Plasma对象的不可变特性：}Ray以及Plasma中的数据对象均是不可变的（Immutable）。这意味着，对已有内存对象做出任何修改都将生成一个全新的对象，并赋予不同的标识符。
-Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引用计数（Reference Counting）机制，不可变数据对象是分布式计算框架中常采用的一种设计。这对计算框架的设计有诸多好处：
+Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引用计数（Reference Counting）机制，不可变数据对象是当前分布式计算框架中常采用的设计方案。这对计算框架的实现有诸多好处：
 
 \begin{enumerate}
     \item 避免复杂的并发读写机制
@@ -44,16 +46,16 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
     \item 简化错误发现和恢复机制的实现
 \end{enumerate}
 
-不过，不可变特性并不符合“零拷贝”的性能优化原则，因此会对计算框架的性能造成负担：由于对象存储之间、对象存储和任务进程之间的通信，对象传输机制存在较大的固定延迟，因此Ray频繁创建、移动小对象会显著影响其整体性能。
+不过，不可变特性并不符合“零拷贝”的性能优化原则，因此会对计算框架的性能造成负担：由于Plasma对象存储间的网络通信、对象存储和任务进程间的IPC通信均存在着一定的延迟，因此Ray频繁创建、移动小对象会显著影响其整体性能。
 
-目前，Ray的实际实现中规定仅有大于100KiB大小
-\cite{ray_whitepaper}的对象通过Plasma对象存储实现集群共享——
-任务进程将更小的数据直接存放在进程的预留空间内，并通过将这些数据内嵌（inline）在RPC调用的参数中实现传递。这一实现策略指引我们在接下来的性能测试和分析中关注Plasma在大对象传输中的性能瓶颈。
+为了减少小对象移动中的固定延迟，目前，Ray的实际实现中规定仅有大于100KiB大小
+\cite{ray_whitepaper}的对象通过Plasma对象存储实现集群共享——任务进程将更小的数据直接存放在进程的预留空间内，
+并将这些数据内嵌（inline）在RPC调用的参数中实现传递。这一实现策略指引我们在接下来的性能测试和分析中关注Plasma在大对象传输中的性能瓶颈。
 
 \section{Plasma架构分析}
 \label{sec:plasma_arch}
 
-除了支持Ray的内存对象管理，Plasma也可以单独构成一个由多个进程组成的缓存集群。
+除了支持Ray的内存对象管理，Plasma配合Redis数据库可以单独构成一个由多个进程组成的内存缓存集群。
 由于控制面、数据面上的任务解耦到了不同的进程，我们可以较为方便地对其软件架构进行改进。
 \autoref{fig:plasma_arch}展示了Plasma集群的组织结构。
 
