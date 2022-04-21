@@ -1,8 +1,8 @@
 \chapter{基于RDMA的Plasma数据传输机制实现}
 \label{cha:implementation}
 
-在本章节中，我们将基于上一章对Plasma架构和性能的分析，提出并实现一种适应各大小数据的高吞吐数据传输机制。Plasma中的跨节点通信单独实现在\autoref{sec:plasma_cluster}描述的
-Manager进程中。因此在本章节中，如无特殊说明，进程均指的是Manager进程。
+在本章节中，我们将基于上一章对Plasma架构和性能的分析，提出并实现一种自适应数据规模的高吞吐数据传输机制。Plasma中的跨节点通信单独实现在\autoref{sec:plasma_cluster}描述的
+管理（Manager）进程中。因此在本章节中，如无特殊说明，进程均指的是Manager进程。
 
 \section{连接的建立和复用}
 \label{sec:ib_con}
@@ -91,7 +91,10 @@ IB连接的建立流程有显著的时间开销。在实验中，我们通过测
 
 \textbf{两种传输机制的混合实现：}上述的两种传输协议具有不同的性能表现，本质上是在两种固定开销中进行权衡：双边传输协议使双方增加了一次内存拷贝，避免了重复的内存注册/注销操作；单边传输协议每次传输都需要注册/注销内存，但真正实现了（用户态/内核态）内存零拷贝。直观上来说，
 前者适合发送小数据，而大型数据则应该采用后者传输。幸运的是，通过确定一个分界点，我们能将两种机制混合实现，而只需要对Plasma主逻辑做出微小改动。定义常量IB\_READ\_MIN\_SIZE为采用单边协议的最小数据量，就能在函数调用前确定使用的协议。
-下方\autoref{server}展示了Plasma发送端的处理逻辑:
+下方\autoref{server}展示了Plasma发送端的处理逻辑。
+
+和发送方不同，接收方需要在收到对象元数据后在本地存储中创建该对象；并且，在通过RDMA接收数据并复制到合适位置后，还需要封存对象，使得对象能对集群中的其他进程可见。
+下方\autoref{client}展示了Plasma接收端的处理逻辑。
 
 \begin{algorithm}[H]
 	\caption{服务端发送机制}\label{server}
@@ -107,9 +110,6 @@ IB连接的建立流程有显著的时间开销。在实验中，我们通过测
 	}
 	释放对象：plasma\_release($id$)
 \end{algorithm}
-
-和发送方不同，接收方需要在收到对象元数据后在本地存储中创建该对象；并且，在通过RDMA接收数据并复制到合适位置后，还需要封存对象，使得对象能对集群中的其他进程可见。
-下方\autoref{client}展示了Plasma接收端的处理逻辑：
 
 \begin{algorithm}[H]
 	\caption{客户端接收机制}\label{client}
@@ -132,12 +132,12 @@ IB连接的建立流程有显著的时间开销。在实验中，我们通过测
 获得IB\_READ\_MIN\_SIZE的最优取值。在之后的实验中，我们将对套接字协议、双边传输协议和单边传输协议分别进行详细的性能测试，从而确定出最优的参数，
 得到最优的总体性能。
 
-\textbf{IB连接的完整实现：}下方\autoref{lst:label}展示了支持混合传输机制的最终实现。
+\textbf{IB连接的完整实现：}下方\autoref{lst:connection}展示了支持混合传输机制的最终实现。
 每当两个进程之间按照\autoref{sec:ib_con}所描述的流程建立一个IB连接时，它们将分别创建该数据结构的一个副本，并将其插入到哈希表中。之后，它们通过维护
 这个结构来完成后续的双边或者单边通信。
 
-\begin{minipage}{\linewidth}	
-\begin{lstlisting}[style=sysucpp, label={lst:label}]
+\begin{minipage}{\linewidth}
+\begin{lstlisting}[style=sysucpp, label={lst:connection}]
 typedef struct {
   struct ibv_qp *qp;
   struct ibv_wc *wc;
@@ -151,7 +151,7 @@ typedef struct {
   int64_t bufsize;
 
   uint32_t rkey;
-  uint64_t raddr;
+  uint64_t raddr;		// information for remote fetch
 
   // key and handle to construct a hash table
   int slid;

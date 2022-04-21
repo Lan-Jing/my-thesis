@@ -62,7 +62,7 @@
         \midrule
     	\multirow{2}{*}{测试软件} & openmpi@4.1.1 & 编译基于MPI的多节点性能测试 \\
 		& hwloc@2.5.0 & 查看服务器的NUMA拓扑结构 \\
-		& numactl@2.0.14 & 控制MPI进程在NUMA架构下的绑核运行 \\
+		& numactl@2.0.14 & 运行时绑定MPI进程和NUMA节点 \\
         \bottomrule
     \end{tabular}
     \label{tab:software_config}
@@ -70,16 +70,16 @@
 
 \section{NUMA架构下的Plasma存储测试}
 
-\textbf{跨NUMA节点访存对性能测试的影响：}上一章节中提到了天河高性能集群存在的NUMA访问架构。IB网卡在NUMA架构中，对“远端”CPU所管理的内存发起内存访问需要通过两个CPU之间的UPI互联（The Intel Ultra Path Interconnect，\autoref{fig:server_block}中间\textit{蓝色连接}），
+\textbf{跨NUMA节点访存对性能测试的影响：}上一章节中提到了天河高性能集群存在的NUMA访问架构。IB网卡在NUMA架构中，对“远端”CPU所管理的内存发起内存访问需要通过两个CPU之间的UPI互联（The Intel Ultra Path Interconnect，\autoref{fig:server_block}中间蓝色连接），
 因而无法获得最优的访存延迟和带宽，对Plasma本地存储的性能产生较大的不利影响。由于Plasma传输数据前首先会（在发送端）访问或者（在接收端）创建内存对象，因而会进一步影响Plasma跨节点数据传输的延迟和吞吐能力。
-所以，为了获得最佳的传输测试结果，我们将首先通过简单的绑核以优化Plasma的本地存储性能。
+所以，为了获得最佳的传输测试结果，我们将首先通过简单的NUMA绑定以优化Plasma的本地存储性能。
 
 在天河高性能服务器中，通过hwloc软件提供的lstopo命令可以查看IB网卡在服务器NUMA架构中所处在的位置：以太网卡挂载在NUMA节点0上，而IB网卡挂载在NUMA节点1上。
-这样，我们能通过numactl命令限制plasma\_store和plasma\_manager进程运行在NUMA节点1，从而避免IB网卡的跨NUMA节点访存。
+这样，我们能通过numactl命令限制plasma\_store和plasma\_manager进程只运行在NUMA节点1，从而避免IB网卡的跨NUMA节点访存。
 
-\textbf{绑核性能测试：}为了展示绑核对访存性能的影响，我们分别在绑核与未绑核的情况下测试了Plasma本地存储操作的性能，同时也对Redis进行测试作为参考。结果如\autoref{fig:numa}所示。很显然，不论是本地读还是本地写
-使用绑核操作后Plasma的程序性能都有了相当明显的提升：可以看到，在写入较小对象时，绑核的Plasma进程可以获得1.5倍的吞吐能力；不过，绑核运行时的写入性能随着数据增大逐渐下降，
-最后和不绑核时持平。在读取和删除对象操作上，绑核在所有数据大小上都有显著的优化效果，其中读取操作的吞吐率增加到原来的至多1.55倍，删除操作的吞吐率增加到原来的至多5倍。
+\textbf{NUMA绑定的性能测试：}为了展示NUMA绑定对访存性能的影响，我们分别在绑定与未绑定的情况下测试了Plasma本地存储操作的性能，同时也对Redis进行测试作为参考。结果如\autoref{fig:numa}所示。很显然，不论是本地读还是本地写
+绑定后Plasma的程序性能都有了相当明显的提升：可以看到，在写入较小对象时，绑定的Plasma进程可以获得1.5倍的吞吐能力；不过，绑定运行时的写入性能随着数据增大逐渐下降，
+最后和不绑定时持平。在读取和删除对象操作上，绑定NUMA节点在所有数据大小上都有显著的优化效果，其中读取操作的吞吐率增加到原来的至多1.55倍，删除操作的吞吐率增加到原来的至多5倍。
 
 \begin{figure}[h]
     \begin{subfigure}{0.49\textwidth}
@@ -96,24 +96,24 @@
         \includegraphics[width=\textwidth]{image/chap04/del.png}
         \caption{Delete}
     \end{subfigure}
-    \caption{绑核对Plasma常见操作吞吐率的影响}
+    \caption{绑定对Plasma常见操作吞吐率的影响}
     \label{fig:numa}
 \end{figure}
 
-与之相比，绑核并不能给Redis带来更强大的吞吐能力——不论是否绑核，Redis在三种常见操作上具有相近的吞吐能力；且在读取/删除操作中，Plasma性能显著更优。
+与之相比，绑定并不能给Redis带来更强大的吞吐能力——不论是否绑定，Redis在三种常见操作上具有相近的吞吐能力；且在读取/删除操作中，Plasma性能显著更优。
 这种区别很有可能是Redis和Plasma传输数据的实现方式不同而导致的：
 \begin{itemize}
     \item 如\autoref{sec:plasma_arch}所述，Plasma使用mmap机制获取对象地址后，使用用户态内存拷贝（如memcpy）进行数据读写。
     \item Redis使用的是TCP环回地址（127.0.0.1）向服务器读写数据。
 \end{itemize}
-Redis在访存上更依赖于操作系统，因此控制Redis进程的NUMA绑核并不会得到明显的性能提升。
+Redis在访存上更依赖于操作系统，因此控制Redis进程的NUMA绑定并不会得到明显的性能提升。
 
-由于本地访存的延迟大大降低，且Plasma对象传输过程包括了本地访存操作，因此绑核情况下的多节点传输测试更能够体现出基于RDMA的网络协议在传输性能上的优势。
-在之后的性能测试中，基于套接字以及RDMA的传输协议都将以绑核状态运行。
+由于本地访存的延迟大大降低，且Plasma对象传输过程包括了本地访存操作，因此绑定情况下的多节点传输测试更能够体现出基于RDMA的网络协议在传输性能上的优势。
+在之后的性能测试中，基于套接字以及RDMA的传输协议都将运行在一个NUMA节点上。
 
 \section{Plasma网络协议测试}
 
-针对Plasma通过以太网络传输数据所导致的性能瓶颈，我们设计了原生支持RDMA通信机制的数据传输协议。针对可能出现的小对象，我们设计了使用预注册缓冲区的双边通信协议；并且，针对可能出现的大对象，
+针对Plasma通过以太网络传输数据所导致的性能瓶颈，我们设计了原生支持RDMA通信机制的数据传输协议。针对可能出现的小对象（$\leq 4KB$），我们设计了使用预注册缓冲区的双边通信协议；并且，针对可能出现的大对象（$\geq 1MB$），
 设计了具有完全零拷贝特性的单边传输协议。因此，优化的Plasma通过混合两种机制，能在不同大小的数据都取得较好的吞吐能力。在Plasma优化实现的性能测试中，我们将测试基于IPoIB的套接字、RDMA双边通信以及单边通信在各个数据大小
 上的传输性能，一方面验证RDMA机制在性能上的优越性，另一方面可以确定混合机制的关键决策阈值，从而获得最佳的综合性能。
 
@@ -153,7 +153,7 @@ Redis在访存上更依赖于操作系统，因此控制Redis进程的NUMA绑核
 我们通过观察实验数据，选择常量IB\_READ\_MIN\_SIZE的值为32KB。以该常量值为分界线，当对象大小小于该值时使用双边传输协议，反之使用单边传输协议。此时，我们能够将两种机制的性能特征简单而有效地结合起来，从而达到Plasma实现的最大优化。值得注意的是，最优的参数应当随着CPU、IB网卡、内存等硬件的性能发生变动。
 不过，通过我们在本研究中实现的性能测试程序，确定最优的策略应该是容易的。
 
-\textbf{与Redis对比：}在确认了Plasma最佳的混合传输策略之后，我们可以将优化的Plasma实现和Redis作性能对比。两者传输各个大小数据的延迟如\autoref{fig:redis_small}和\autoref{fig:redis_big}所示。
+\textbf{Plasma（优化后）与Redis对比：}在确认了Plasma最佳的混合传输策略之后，我们可以将优化的Plasma实现和Redis作性能对比。两者传输各个大小数据的延迟如\autoref{fig:redis_small}和\autoref{fig:redis_big}所示。
 和\autoref{sec:bench}不同，经过RDMA传输优化后的Plasma，已经能在常见大小的对象传输上获得比Redis
 显著更优的性能。然而还需要强调的是，Plasma在传输测试中所完成的操作，要比Redis更多——Plasma每次拉取对象到本地内存中，都会创建该对象的一个副本：分配相同大小的内存空间、拷贝数据并且封存；而Redis在性能测试中并不会这么做。总结来说，这是Plasma为了支持Ray分布式缓存、分布式访问所需的额外代价。
 然而，通过借助RDMA的硬件优势，我们优化了Plasma内存存储的传输机制，使其在高性能集群上同时拥有了以下技术优势：

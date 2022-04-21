@@ -13,16 +13,16 @@
 
     % 随着大数据处理、大规模智能模型训练、强化学习等多样化、高负载的计算需求成为学术界和产业界关注的焦点之一，作为计算基础设施的分布式计算框架（如Mapreduce, Spark, Ray）正在得到更多的关注和更广泛的应用。
     分布式计算框架（如Mapreduce, Spark, Ray）是一种复杂的平台软件，支持用户运行分布式计算任务。计算框架除了为用户调度任务，还需要高效地管理和利用计算集群的物理资源。
-    大数据处理、大规模智能模型训练等快速增长的计算需求，使计算集群的性能愈发捉襟见肘：一方面，高性能计算（HPC）集群正在得到更广泛的部署和应用。这类集群拥有的新型高性能网络，明显地区别于传统集群。
+    大数据处理、大规模智能模型训练等快速增长的计算需求，逐渐受制于集群有限的硬件性能和资源利用：一方面，高性能计算（HPC）集群正在得到更广泛的部署和使用，其硬件优势仍有待挖掘。这类集群拥有的新型高性能网络，明显地区别于传统集群。
     以智能网卡为硬件基础，高性能计算机能够在无中央处理器（CPU）的介入下，对机器内存直接读写以传输数据。这种被称为远程直接内存访问（RDMA）的传输机制，相比以太网具有低占用、低延迟、高带宽等技术优势。
-    另一方面，作为基础设施的软件框架，也在面临严峻的性能挑战：当前，大多数分布式计算框架仍然缺乏对高性能硬件的支持，特别是无法充分利用集群中的高速网络资源。
+    另一方面，作为基础设施的软件框架，则面临无法高效使用硬件资源的挑战：当前，大多数分布式计算框架仍然缺乏对高性能硬件的支持，特别是无法充分利用集群中的高速网络资源。
     
-    近年来，出现了以强化学习、流处理为代表的新型计算任务。其任务逻辑更加灵活、复杂，不再能以数据并行、任务并行简单描述。为了支持更灵活的任务调度，计算框架需要实现高效的数据管理机制，特别是针对集群中分布的内存对象。
-    分布式内存存储Plasma是新型计算框架Ray的内存管理组件。然而，Plasma尚未能支持HPC集群的高速网络，从而在任务间快速地传递内存对象。
-    为此，通过设计支持RDMA的高性能通信机制，我们能将现代网络的硬件优势转化为Ray系统整体的性能优势。
+    近年来，出现了以强化学习、流处理为代表的新型计算任务。其任务逻辑更加灵活、复杂，调度机制也不再限于任务并行、数据并行等静态方法。为了支持更灵活的任务调度及数据移动，计算框架需要高效的数据管理机制，特别是针对分布在集群内存空间中的对象数据。
+    分布式内存对象存储Plasma是新型计算框架Ray的内存管理模块。然而，Plasma未能直接利用HPC高速网络的硬件优势，因此无法在任务间低时延地传递对象数据。
+    为此，通过研发基于RDMA的高性能数据传输机制，我们能将现代网络的硬件优势转化为Ray系统整体的性能优势。
     
     在本研究中，我们首先测试和分析了其基于以太网和套接字传输数据而导致的性能瓶颈。然后，在高性能集群上，我们提出了一种支持RDMA特性的高吞吐对象传输机制。
-    该机制针对大型数据对象，提出了基于单边读语义的传输协议，实现了用户态的内存零拷贝。并且，该机制能够在运行时，根据数据大小动态地选择传输协议，以获得最佳性能。进一步，我们基于并行计算范式MPI构造了分布式、可扩展的多节点传输性能测试。
+    该机制针对大型对象数据，提出了基于单边读语义的传输协议，实现了用户态的内存零拷贝。并且，该机制能够在运行时，根据数据大小动态地选择传输协议，以获得最佳性能。进一步，我们基于并行计算范式MPI构造了分布式、可扩展的多节点传输性能测试。
     在实验中，我们确定了传输协议的最优参数，并且展示了在天河高性能集群上，优化后的内存平台在常见大小的对象传输中实现至多7倍于原实现的吞吐率。
 }
 % 中文关键词(每个关键词之间用“，”分开,最后一个关键词不打标点符号。)
@@ -31,21 +31,24 @@
 \eabstract{
     % 英文摘要及关键词内容应与中文摘要及关键词内容相同。中英文摘要及其关键词各置一页内。
  
-    Diverse and heavy computing workloads, including big data processing, large-scale model training, and reinforcement learning (RL),
-    have increasingly drawn attention from the industrial and academic worlds. Distributed computing frameworks (Mapreduce, Spark, Ray, etc.) as the infrastructure
-    recently also gained more attention and applications. Frameworks are responsible for scheduling users' tasks and efficiently utilizing 
-    the physical resources of the clusters. The growing need forg computation that comes with the mentioned workloads challenges the performance of these machines. On the one hand, 
-    high-performance computing (HPC) clusters are widely deployed to handle intensified computation. These systems have distinct network architecture.
-    With hardware support from smart NICs, HPC machines can directly read/write remote memory for communication.
-    The transmission technique called Remote Direct Memory Access (RDMA) presents low occupancy, low latency, and high bandwidth as strengths that Ethernet doesn't own. On the other hand, the underlying software
-    faces severe performance problems as well: most recent distributed computing frameworks cannot exploit high-performance hardware, especially high-speed networks with RDMA.
+    Distributed computing frameworks (e.g., Mapreduce, Spark, Ray) are complicated platform software supporting distributed tasks. 
+    Besides scheduling users' tasks, frameworks are responsible for efficiently utilizing the resources of a cluster.
+    In the context of big data and large models, hardware performance and resource usage have long been limiting the scale of computation.
+    On the one hand, high-performance computing (HPC) clusters are widely deployed now. 
+    These systems have distinct network architecture. With hardware support from smart NICs, HPC machines can directly read/write remote memory for communication.
+    The transmission technique called Remote Direct Memory Access (RDMA) presents low occupancy, low latency, and high bandwidth as strengths that Ethernet doesn't own. 
+    On the other hand, most recent frameworks cannot exploit high-performance hardware, especially high-speed networks with RDMA.
 
-    The above performance gap exists in Ray, a novel framework targeting emerging computing tasks such as RL. To handle this, we manage to turn advanced features of RDMA into
-    better performance, by introducing a novel, high-performance transmission scheme. Our work focuses on Ray's core component: distributed in-memory object store named Plasma. We first identify the network bottleneck of Plasma
-    through benchmarking and analysis. Then, we propose this scheme with hybrid transfer protocols.
-    Besides the usual send/recv protocol, it has an extra one-sided read protocol for transferring
-    large objects with zero-copy. For the best performance, we further implement a simple yet effective strategy to switch between the send-based and read-based protocols, given the sizes of the objects. Finally, we construct a distributed, scalable
-    benchmark for testing the transmission overhead. Experiments demonstrate that, with the best-selected parameter, our improved memory store can achieve up to 7x throughput on our Tianhe HPC cluster.
+    Novel tasks such as reinforcement learning and stream processing have emerged recently. These tasks are flexible and complex that they cannot be scheduled simply with task or data parallelism.
+    Therefore, frameworks now need efficient cluster memory management to support a better scheduling scheme. Plasma is the distributed memory management module of a popular framework called Ray.
+    However, it doesn't exploit the advanced features of the HPC network, thus not able to transfer data with low latency. 
+    By introducing a novel, high-performance transmission scheme, we manage to turn features of modern network into better performance of Plasma and Ray.
+    
+    In this work, we first identify the network bottleneck of Plasma with benchmark and analysis. Then, we propose this scheme with hybrid transfer protocols.
+    Besides the usual send/recv protocol, it chooses a one-sided read protocol for transferring
+    large objects with zero-copy. For the best performance, we further implement a simple yet effective strategy to switch between the two protocols, given the sizes of the objects. 
+    Finally, we construct a distributed, scalable MPI benchmark for testing the transmission overhead. 
+    Experiments demonstrate that, with the best-selected parameter, our improved memory store can achieve up to 7x throughput on our Tianhe HPC cluster.
 }
 % 英文文关键词(每个关键词之间用,分开, 最后一个关键词不打标点符号。)
 \ekeywords{data transfer, high-performance network, RDMA, key-value store, distributed memory}

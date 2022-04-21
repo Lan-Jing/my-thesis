@@ -1,8 +1,8 @@
-\chapter{Plasma分布式内存存储架构和性能分析}
+\chapter{分布式内存存储Plasma架构和性能分析}
 
 \section{Plasma工作机制简介}
 
-在本段落中，我们将介绍Plasma分布式内存存储的工作机制。并以分布式计算框架Ray为例，我们介绍了Plasma存储如何实现集群内存管理，以支持细粒度的任务调度机制。
+在本段落中，我们将介绍基于分布式内存的对象存储Plasma的工作机制。并以计算框架Ray为例，我们介绍Plasma作为计算框架的核心模块，如何实现内存资源和对象数据的管理，以支持细粒度的任务调度机制。
 
 \begin{figure}[h] 
     \centering
@@ -12,11 +12,11 @@
 \end{figure}
 
 \textbf{Ray架构简介：}
-\autoref{fig:ray_arch}展示了Plasma分布式内存存储，以及其在Ray计算集群中的位置。
+\autoref{fig:ray_arch}展示了分布式内存存储Plasma，以及其在计算框架Ray中的位置。
 Ray集群由一个主节点（Head Node）和多个工作节点（Worker Node）构成。驱动（Driver）进程运行在主节点上，工作（Worker）进程运行在所有节点上。通常，一个进程和集群中的一个CPU核心对应。
 全局控制存储（Global Control Store，GCS）运行在主节点，存放着Ray集群范围的关键配置信息。
 此外，每个节点运行着Ray集群的核心中间件：Raylet。Raylet主要由调度器（Scheduler）和对象存储Plasma构成——调度器负责将Driver进程解析出的任务调度到合适的工作进程中运行；
-Plasma内存存储存放着计算产生的数据——包括任务运行依赖的输入数据和产生的输出数据。
+Plasma存储并管理计算产生的数据——包括任务运行依赖的输入数据和产生的输出数据。
 
 \begin{figure}[h] 
     \centering
@@ -59,7 +59,7 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
 由于控制面、数据面上的任务解耦到了不同的进程，我们可以较为方便地对其软件架构进行改进。
 \autoref{fig:plasma_arch}展示了Plasma集群的组织结构。
 
-\begin{figure}[h] 
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{image/chap02/plasma_arch.png}
     \caption{Plasma存储架构}
@@ -72,8 +72,15 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
 当用户（Client）进程发起创建对象请求时，会将关键元数据——即对象编号（id）、元数据大小、数据大小等通过进程间通信（IPC）发送给Store进程。
 值得注意的是，Plasma使用Unix域套接字（Unix Domain Socket）作为进程间通信方式，这一方式允许用户端以类似套接字的方式，通过操作系统内核与本机内的另一个进程交换数据。
 
-Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前常见的内存数据库如Redis，用户端进程和服务端需要直接交换数据以完成创建、读取等操作。而Plasma利用了mmap机制，
-使得客户端与服务端两个进程能够共享内存空间：
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{image/chap02/mmap.png}
+    \caption{mmap共享内存机制}
+    \label{fig:mmap}
+\end{figure}
+
+Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前常见的内存键值对数据库如Redis，用户端进程和服务端需要直接交换数据以完成创建、读取等操作。而Plasma利用了mmap机制，
+使得客户端与服务端两个进程能够共享内存空间，如\autoref{fig:mmap}所示：
 
 \begin{enumerate}
     \item 创建对象时，服务端使用mmap映射分配内存空间，将其与一临时文件映射。
@@ -108,7 +115,7 @@ Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前�
 \subsection{Plasma集群架构}
 \label{sec:plasma_cluster}
 
-Plasma存储将其集群架构以一个管理者（Manager）进程单独实现。多个Manager进程以及一个Redis数据库共同构成其集群架构，\autoref{fig:plasma_arch}中上方
+Plasma存储将其集群架构以一个管理（Manager）进程单独实现。多个Manager进程以及一个Redis数据库共同构成其集群架构，\autoref{fig:plasma_arch}中上方
 展示了这一架构。Plasma在集群架构中定义了如下操作原语：
 
 \begin{table}[h]
@@ -138,7 +145,7 @@ Manager进程仅处理用户进程发出的一种请求，即输入一个id列�
 \section{基于套接字的Plasma通信机制}
 
 Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Redis服务器获得对象处在的目标节点后，Manager会逐一尝试建立套接字连接，并拉取数据。
-其通信机制如\autoref{fig:sock_protocol}所示：
+其通信机制如\autoref{fig:sock_protocol}所示，其中各消息类型的含义如\autoref{tab:message_meaning}所示：
 
 \begin{figure}[h] 
     \centering
@@ -146,6 +153,21 @@ Plasma实现了基于套接字（Socket）的数据传输机制。通过访问Re
     \caption{基于套接字的Plasma通信机制}
     \label{fig:sock_protocol}
 \end{figure}
+
+\begin{table}[h]
+    \centering
+    \caption{Plasma通信中的消息类型}
+    \begin{tabular}{*{2}{c}}
+        \toprule
+        消息名称 & 作用描述      \\
+        \midrule
+        PLASMA\_TRANSFER & 接收方发起一次传输，包含内存对象的标识符 \\
+        PLASMA\_DATA & 发送方发送元数据，包含数据大小 \\
+        data & 内存对象数据 \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:message_meaning}
+\end{table}
 
 发起者（Receiver）首先将一条类别为PLASMA\_TRANSFER的消息发送给存有数据对象的Manager进程。在得知需要发送的对象id后，发送方通过向Store调用查询操作获得了
 数据的缓冲区地址。需要注意的是，Plasma的读取操作具有常数的时间复杂度，因而会马上返回。发送方（Sender）会将查询到的元数据（主要是数据大小）通过PLASMA\_DATA消息返回给接收方，接收方便会
@@ -197,7 +219,7 @@ Plasma在这一操作上有稍高的延迟。由于Plasma通过mmap机制，在�
 \end{figure}
 
 如\autoref{fig:remote_bench}所示，Plasma在远程操作上的吞吐能力显著地劣于Redis，在1MB大小的数据上前者有3.6倍的传输延迟。虽然，两者实际完成的语义很不相同——
-Plasma需要先获取对象在集群中的位置，这本身就将访问一次Redis服务器；另外，Plasma发起一次拉取操作包含了一次本地Create操作，这也将产生额外的延迟。而且，
+Plasma需要先获取对象在集群中的位置，这本身就将访问一次Redis服务器；另外，Plasma发起一次拉取数据包含一次本地Create操作，这也将产生额外的延迟。而且，
 Plasma一次仅以4KB为单位传输数据，也是其在大对象上传输性能明显不如Redis的原因。然而，从我们的实验结果总结来看，不论是Redis还是Plasma都存在明显的性能提升空间：
 它们均不能很好地利用超算网络的低延迟和高带宽。特别是支撑分布式计算框架的Plasma，虽然相比Redis等单机数据库实现了分布式，但相当程度地牺牲了较大对象的传输性能，这是原实现没有解决的问题。
 
