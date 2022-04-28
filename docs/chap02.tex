@@ -2,7 +2,7 @@
 
 \section{Plasma工作机制简介}
 
-在本段落中，我们将介绍基于分布式内存的对象存储Plasma的工作机制。并以计算框架Ray为例，我们介绍Plasma作为计算框架的核心模块，如何实现内存资源和对象数据的管理，以支持细粒度的任务调度机制。
+在本段落中，我们将介绍基于分布式内存的对象存储Plasma的工作机制。并以实时智能计算框架Ray为例，我们介绍Plasma作为计算框架的核心模块，如何实现内存资源和对象数据的管理，以支持细粒度的任务调度机制。
 
 \begin{figure}[h] 
     \centering
@@ -20,7 +20,7 @@ Plasma存储并管理计算产生的数据——包括任务运行依赖的输�
 
 \begin{figure}[h] 
     \centering
-    \includegraphics[width=0.75\textwidth]{image/chap02/object_fetch.png}
+    \includegraphics[width=0.8\textwidth]{image/chap02/object_fetch.png}
     \caption{Plasma工作机制}
     \label{fig:object_fetch}
 \end{figure}
@@ -72,13 +72,6 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
 当用户（Client）进程发起创建对象请求时，会将关键元数据——即对象编号（id）、元数据大小、数据大小等通过进程间通信（IPC）发送给Store进程。
 值得注意的是，Plasma使用Unix域套接字（Unix Domain Socket）作为进程间通信方式，这一方式允许用户端以类似套接字的方式，通过操作系统内核与本机内的另一个进程交换数据。
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.6\textwidth]{image/chap02/mmap.png}
-    \caption{mmap共享内存机制}
-    \label{fig:mmap}
-\end{figure}
-
 Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前常见的内存键值对数据库如Redis，用户端进程和服务端需要直接交换数据以完成创建、读取等操作。而Plasma利用了mmap机制，
 使得客户端与服务端两个进程能够共享内存空间，如\autoref{fig:mmap}所示：
 
@@ -87,6 +80,13 @@ Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前�
     \item 服务端通过IPC，将上述临时文件的文件描述符（file descriptor，fd）传递给用户进程。
     \item 用户进程使用相同的文件描述符fd再次调用mmap。
 \end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{image/chap02/mmap.png}
+    \caption{mmap共享内存机制}
+    \label{fig:mmap}
+\end{figure}
 
 如此，mmap向Store进程和用户进程返回同一个内存地址，用户进程能够直接读取、操作存储进程中的内存对象。这一架构能够将本地读取操作的开销
 优化到$O(1)$时间复杂度，使Plasma针对大型对象仍然具有优秀的吞吐能力。Plasma在对象存储架构中定义了如下操作原语：
