@@ -1,107 +1,158 @@
-\section{引言}
-\frame
-{
-	\frametitle{\secname~ }
-	\begin{block}{选题背景与意义}
-		是什么，为什么？
-	\end{block}
-	\begin{block}{国内外研究现状}
-		主流方法是什么？
-	\end{block}
-	\begin{block}{本文的工作}
-		我提出的方法是什么，有什么不同？
-	\end{block}
-}
+\section{绪论}
 
-\subsection*{选题背景与意义}
-\frame{
-	\frametitle{图像语义分割问题的定义}
-	\begin{block}{}
-		图像语义分割 (Semantic Image Segmentation) 是根据物体类别把图像分成若干个有意义的区域,并为不同的区域标注其所属标签的视觉任务。
-	\end{block}
-	\begin{figure}%文中的Grid-LSTM模型做的语义图像分割的例子
-		\centering
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_000799.jpg}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_002094.jpg}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_004483.jpg}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_003194.jpg}
-		\\
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_000799.pdf}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_002094.pdf}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_004483.pdf}
-		\includegraphics[width=.2\textwidth,height=.15\textwidth]{image/example/2007_003194.pdf}
-		\caption[语义图像分割的例子]{本文模型在VOC 2012验证集上的语义图像分割例子}
-		\label{fig:example1}
-	\end{figure}
-}
+\subsection*{选题背景}
 
-\frame{
-	\begin{block}{选题的背景}
-		\begin{itemize}
-			\item 手工设计特征的局限性(SIFT, HOG)
-			\item 深度学习技术的兴起
-			      \begin{itemize}
-				      \item 基于GPU的并行化计算
-				      \item 大型训练集的标注
-			      \end{itemize}
-			\item 大数据与智能时代正在来临
-		\end{itemize}
-	\end{block}
-
-	\begin{block}{选题的意义}
-		\begin{itemize}
-			\item[\dag] 图像语义分割解决了图像里面有什么，物体的形状与位置的问题
-		\end{itemize}
-		\vspace{-1em}
-		\begin{multicols}{2}
-			\begin{itemize}
-				\item 图像检索
-				\item 图像编辑
-				\item 现实增强
-				\item 机器导航
-			\end{itemize}
-		\end{multicols}
-	\end{block}
-	\}
-}
-\subsection*{国内外研究现状}
-
-\frame{
-	\frametitle{主流方法中的代表性工作}
+\begin{frame}
+	\frametitle{分布式计算框架}
+	\vspace{-1.2em}
 	\begin{columns}[t]
-		\column{.5\textwidth}
-		\centering
-		\includegraphics[width=\textwidth]{figures/FCN} \\
-		\makebox[0.5\textwidth]{\tiny a. 全卷积网络[Long et al, CVPR 2015]} \\
-		\includegraphics[width=\textwidth]{figures/zoom-out} \\
-		\makebox[0.5\textwidth]{\tiny c. 卷积网络+高低层次特征融合[Mostajabi et al, CVPR 2015]}
+		\column{0.48\textwidth}
+		\begin{block}{早期计算框架\\(Hadoop, Spark, Horovod)}
+			\begin{itemize}
+				\item 单一的任务类型
+				\item 固定的并行模式
+				\item 有限的表达能力
+			\end{itemize}
+		\end{block}
+		\column{0.48\textwidth}
+		\begin{block}{计算任务的变化}
+			\begin{itemize}
+				\item 异构任务
+				\item 复杂的组织结构
+				\item 实时计算、在线处理
+			\end{itemize}
+		\end{block}
+	\end{columns}
+	\begin{columns}[onlytextwidth]
+		\column{0.33\textwidth}	
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/chap01/mapreduce.png}	
+			\caption{Mapreduce}
+		\end{figure}
+		\column{0.33\textwidth}	
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/chap01/acme.png}	
+			\caption{强化学习}
+		\end{figure}
+		\column{0.33\textwidth}	
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/chap01/ray.png}
+			\caption{视频流处理}
+		\end{figure}
+	\end{columns}
+\end{frame}
 
-		\column{.5\textwidth}
-		\centering
-		\includegraphics[width=\textwidth]{figures/Deeplab} \\
-		\makebox[0.5\textwidth]{\tiny b. 全卷积网络+概率图模型[Chen et al, ICLR 2015]} \\
-		\vspace{0.8em}
-		\includegraphics[width=\textwidth]{figures/LSTM} \\
-		\makebox[0.5\textwidth]{\tiny d. 二维长短记忆网络[Byeon et al, CVPR, 2015]}
+\frame{
+	\frametitle{新型计算框架Ray}
+	\begin{columns}[onlytextwidth]
+		\column{0.31\textwidth}
+		\vspace{-0.5em}
+		\begin{block}{通用\&实时}
+			\begin{itemize}
+				\item 细粒度任务调度 \\ 函数为单位
+				\item \textbf{集群内存管理} \\ 数据随调度移动
+			\end{itemize}
+		\end{block}
+		\begin{block}{集群内存管理}
+			\begin{itemize}
+				\item 依赖解析机制
+				\item 分布式内存存储Plasma
+			\end{itemize}
+		\end{block}
+		\column{0.68\textwidth}
+		\vspace{-0.5em}
+		\begin{figure}
+			\centering
+			\includegraphics[width=0.95\textwidth]{image/chap02/ray_arch.png}
+			\caption{Ray集群架构}
+		\end{figure}
 	\end{columns}
 }
-\subsection*{本文的工作}
-\frame{
-	\vspace{-0.6em}
-	\begin{figure}[h]
-		\centering
-		\includegraphics[width=\textwidth]{image/illustration/networkstructure.pdf}
-		\caption{网络整体结构图}
-	\end{figure}
-	\vspace{-1.2em}
-	\begin{block}{目标与思路}
-		\footnotesize
-		\begin{itemize}
-			\item 充分利用全卷积网络强大的特征学习能力
-			\item 借助长短记忆网络对特征整体与局部建模的良好能力
-			\item 使用随机梯度下降法进行端到端的训练
-			\item 在主流数据集验证模型有效性
-		\end{itemize}
-	\end{block}
-}
 
+\begin{frame}
+	\frametitle{硬件的变化}
+
+	\vspace{-1.5em}
+	\begin{columns}[t]
+		\column{0.47\textwidth}
+		\begin{block}{分布式内存存储Plasma}
+			\begin{itemize}
+				\item 内存对象的网络传输
+				\item 大小不一的对象
+				\item \textbf{是否充分利用网络？}
+			\end{itemize}
+		\end{block}
+		\column{0.47\textwidth}
+		\begin{block}{Infiniband高速网络}
+			\begin{itemize}
+				\item 低延迟：$\thicksim 1\mu s$
+				\item 高带宽：200Gb/s
+				\item 链路层容错
+				\item \textbf{RDMA}
+			\end{itemize}
+		\end{block}
+	\end{columns}
+
+	\begin{columns}[onlytextwidth]
+		\column{0.3\textwidth}
+		\begin{figure}
+			\centering
+			\includegraphics[scale=0.3]{image/presentation/hca.jpg}
+			\caption{HDR IB网卡}
+		\end{figure}
+	
+		\column{0.7\textwidth}
+		\begin{figure}
+			\centering
+			\includegraphics[scale=0.13]{image/chap01/qp.png}
+			\caption{IB传输层模型}
+		\end{figure}
+	\end{columns}
+		
+\end{frame}
+
+\begin{frame}
+	\frametitle{远程直接内存访问（Remote Direct Memory Access，RDMA）}
+	\begin{columns}[onlytextwidth]
+		\column{0.25\textwidth}
+		\begin{block}{\textbf{用户态}网络栈}
+			\begin{itemize}
+				\item 内核旁路
+				\item 零拷贝
+				\item CPU卸载
+			\end{itemize}
+		\end{block}
+		\column{0.73\textwidth}
+		\vspace{1.5em}
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/presentation/rdma.png}
+			\caption{RDMA示意图}
+			\label{fig:rdma}
+		\end{figure}
+	\end{columns}
+\end{frame}
+
+\subsection*{国内外研究现状}
+\begin{frame}
+	\frametitle{基于RDMA的内存系统}
+
+	
+
+\end{frame}
+
+\subsection*{本文的工作}
+\begin{frame}
+	\begin{block}{如何为Plasma提供原生RDMA支持？}
+		我们的实现兼容~以太网~和~Infiniband
+	\end{block}
+	\begin{block}{大小不一的内存对象，如何性能最佳？}
+		基于对象大小的混合传输协议
+	\end{block}
+	\begin{block}{如何测试传输性能？}
+		基于MPI的多节点测试；确定了最优决策参数
+	\end{block}
+\end{frame}

@@ -1,11 +1,11 @@
-\documentclass[UTF8, xcolor=table]{beamer}
+\documentclass[UTF8, xcolor=table, fontset=adobe2]{beamer}
 \usepackage[BoldFont,SlantFont]{xeCJK}
-\setCJKmainfont[BoldFont={Adobe Heiti Std},ItalicFont={Adobe Kaiti Std}]{AdobeSongStd-Light}
+% \setCJKmainfont[BoldFont={Adobe Heiti Std},ItalicFont={Adobe Kaiti Std}]{AdobeSongStd-Light}
 % \setCJKmainfont[BoldFont={Adobe Heiti Std},ItalicFont={Adobe Kaiti Std}]{SimSum} %Windows先编译使用这个字体
 
 \usepackage{latexsym,amssymb,amsmath,amsbsy,amsopn,amstext,xcolor,multicol}
 \usepackage{graphicx,wrapfig,fancybox}
-\usepackage{pgf,pgfarrows,pgfnodes,pgfautomata,pgfheaps,pgfshade}
+\usepackage{pgf,pgfarrows,pgfnodes,pgfautomata,pgfheaps,pgfshade,pgfplots}
 \usepackage{thubeamer}
 \usepackage[backend=bibtex,sorting=none]{biblatex} % [参考文献格式](https://www.sharelatex.com/blog/2013/07/31/getting-started-with-biblatex.html) %mac IEEE not found
 \usepackage{array}
@@ -58,21 +58,18 @@
 
 \graphicspath{{../}}
 
-\title[融合长短记忆神经网络与卷积特征学习的图像语义分割]{中山大学本科毕业论文演示文稿非正式模版}
-\author[陈冠英]{}%{(申请中山大学工学学士学位论文答辩报告)\\ \vskip 20pt 学~~~~~~生：陈~冠~英}
-\institute[中山大学~电子信息与工程学院~\&~自动化]{}%{\small \vskip 38pt 电子信息与工程学院~自动化}
-\date{} %{\small \vskip -17pt二〇一六年五月}
+\title[基于RDMA的分布式内存存储数据传输优化]{基于RDMA的分布式内存存储数据传输优化}
+\author[兰靖]{(申请中山大学工学学士学位论文答辩报告)\\ \vskip 20pt 学~~~生：兰~~靖}
+\institute[中山大学~计算机学院~\&~计算机科学与技术]{\small \vskip 38pt 计算机学院~计算机科学与技术}
+\date{\small \vskip -17pt二〇二二年五月}
 
 %% make title %%
 \frame{
         \titlepage
         \vspace{-23mm}
-        \begin{figure}[h]
-                \centering
-                \includegraphics[width=\textwidth]{image/illustration/networkstructure.pdf}
-        \end{figure}
 }
 
+\subsection{目录}
 \frame {
         \frametitle{目录}
         %\begin{multicols}{2}
