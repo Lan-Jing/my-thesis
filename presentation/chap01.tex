@@ -1,5 +1,11 @@
 \section{绪论}
 
+\subsection*{目录}
+\frame {
+	\frametitle{目录}
+    \tableofcontents[currentsection]
+}
+
 \subsection*{选题背景}
 
 \begin{frame}
@@ -53,13 +59,13 @@
 		\begin{block}{通用\&实时}
 			\begin{itemize}
 				\item 细粒度任务调度 \\ 函数为单位
-				\item \textbf{集群内存管理} \\ 数据随调度移动
+				\item \textbf{分布式内存管理} \\ 数据随调度移动
 			\end{itemize}
 		\end{block}
-		\begin{block}{集群内存管理}
+		\begin{block}{分布式内存管理}
 			\begin{itemize}
 				\item 依赖解析机制
-				\item 分布式内存存储Plasma
+				\item 分布式对象存储Plasma
 			\end{itemize}
 		\end{block}
 		\column{0.68\textwidth}
@@ -73,7 +79,7 @@
 }
 
 \begin{frame}
-	\frametitle{硬件的变化}
+	\frametitle{高性能集群互联}
 
 	\vspace{-1.5em}
 	\begin{columns}[t]
@@ -81,7 +87,7 @@
 		\begin{block}{分布式内存存储Plasma}
 			\begin{itemize}
 				\item 内存对象的网络传输
-				\item 大小不一的对象
+				\item 通用性：对象大小差异
 				\item \textbf{是否充分利用网络？}
 			\end{itemize}
 		\end{block}
@@ -136,17 +142,47 @@
 	\end{columns}
 \end{frame}
 
-\subsection*{国内外研究现状}
+\subsection*{国内外相关研究现状}
 \begin{frame}
-	\frametitle{基于RDMA的内存系统}
+	\frametitle{内存对象存储}
 
-	
+	\vspace*{-1em}
+	\begin{columns}[t]
+		\column{0.4\textwidth}
+		\begin{block}{节点内}
+			\begin{itemize}
+				\item \sout{进程间通信}
+				\item 共享内存
+			\end{itemize}
+		\end{block}
+		\begin{block}{节点间}
+			\begin{itemize}
+				\item 现代智能网卡
+				\item 功能：RDMA原子操作
+				\item 性能：并发能力
+			\end{itemize}
+		\end{block}
+		\column{0.55\textwidth}
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/presentation/arch.png}
+			\caption{服务和共享内存架构\protect\footnotemark[1]}
+		\end{figure}
+		\vspace*{-1.5em}
+		\begin{figure}
+			\centering
+			\includegraphics[width=\textwidth]{image/presentation/kvdirect.png}
+			\caption{KV-Direct\protect\footnotemark[2]}
+		\end{figure}
+	\end{columns}
+	\footnotetext[1]{Rearchitecting In-Memory Object Stores for Low Latency, PVLDB'22}
+	\footnotetext[2]{KV-Direct: High-Performance In-Memory Key-Value Store with Programmable NIC, SOSP'17}
 
 \end{frame}
 
 \subsection*{本文的工作}
 \begin{frame}
-	\begin{block}{如何为Plasma提供原生RDMA支持？}
+	\begin{block}{如何为分布式对象存储(Plasma)提供原生RDMA支持？}
 		我们的实现兼容~以太网~和~Infiniband
 	\end{block}
 	\begin{block}{大小不一的内存对象，如何性能最佳？}

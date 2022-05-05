@@ -1,5 +1,11 @@
 \section{基于RDMA的对象传输机制实现}
 
+\subsection*{目录}
+\frame {
+	\frametitle{目录}
+    \tableofcontents[currentsection]
+}
+
 \subsection*{架构分析}
 \begin{frame}
 	\frametitle{基于RDMA的对象传输架构分析}
@@ -10,14 +16,14 @@
 		\begin{block}{双边通信协议}
 			\begin{itemize}
 				\item 预注册的发送/接收缓冲区
-				\item 无需重复注册
+				\item 避免内存注册
 			\end{itemize}
 		\end{block}
 		\column{0.47\textwidth}
 		\begin{block}{单边通信协议}
 			\begin{itemize}
 				\item 原地注册的缓冲区
-				\item 零拷贝
+				\item 避免内存拷贝
 			\end{itemize}
 		\end{block}
 	\end{columns}
@@ -32,10 +38,10 @@
 
 \subsection*{协议分析}
 \begin{frame}
-	\frametitle{双边传输协议}
+	\frametitle{双边传输协议(基于RDMA Send)}
 	\begin{columns}[onlytextwidth]
 		\column{0.4\textwidth}
-		\begin{block}{消息}
+		\begin{block}{消息格式}
 			\begin{itemize}
 				\item PLASMA\_TRANSFER:\\发起对象X的传输
 				\item PLASMA\_DATA:\\返回X的元数据
@@ -59,12 +65,12 @@
 \end{frame}
 
 \begin{frame}
-	\frametitle{单边传输协议}
+	\frametitle{单边传输协议(基于RDMA Read)}
 	\begin{columns}[onlytextwidth]
 		\column{0.4\textwidth}
-		\begin{block}{消息}
+		\begin{block}{消息格式}
 			\begin{itemize}
-				\item PLASMA\_DATA\\加入远端地址信息
+				\item PLASMA\_DATA:\\加入远端地址信息
 				\item Read:单边读
 			\end{itemize}
 		\end{block}

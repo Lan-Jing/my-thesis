@@ -1,19 +1,26 @@
 \section{总结与展望}
+
+\subsection*{目录}
+\frame {
+	\frametitle{目录}
+    \tableofcontents[currentsection]
+}
+
 \subsection*{总结与展望}
 \frame{
-	\footnotesize
 	\begin{block}{工作总结}
 		\begin{itemize}
-			\item[\dag] 本文的模型结合了卷积网络的特征学习能力与长短记忆网络对整体局部建模的能力，相比于全卷积网络，大幅度地提高了了模型性能
-			\item[\dag] 大量的对比实验与结果分析证明了模型的有效性
+			\item 分布式内存存储Plasma的架构和性能分析，挖掘出网络性能瓶颈 
+			\item 基于RDMA通信设计了一种全面优于原实现的对象传输机制
+			\item 基于MPI的多节点传输性能测试验证了明显的性能优势
 		\end{itemize}
 	\end{block}
 	\vspace{-1em}
 	\begin{block}{展望}
 		\begin{itemize}
-			\item[\dag] 模型性能：提高网络的深度来学习更高层次的特征，提高模型效果(He et al. ResNet, CVPR 2016)
-			\item[\dag] 模型大小：通过裁剪网络冗余部分(Han et al. Deep Compression, ICLR 2016 Best Paper)或使用二值网络减少模型参数(Courbariaux et al. Binaryconnect, NIPS 2015)
-			\item[\dag] 训练数据：使用无监督或弱监督的方式训练网络(Papandreou et al. Weakly-and semi-supervised learning, ICCV 2015)
+			\item 基于RDMA的RPC调用框架：进一步重构调用机制
+			\item 对象管理机制的协同设计：（基于局部性的）启发式调度、集合通信
+			\item 基于网卡对显存DMA支持，实现主存、GPU显存的异构内存存储
 		\end{itemize}
 	\end{block}
 }

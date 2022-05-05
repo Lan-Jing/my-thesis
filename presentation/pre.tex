@@ -17,6 +17,7 @@
 \usepackage{tikz}
 \usepackage{tikzscale}
 \usepackage{animate}
+\usepackage[normalem]{ulem}
 
 \defbibheading{bibliography}[\bibname]{} %avoid printbibliography 自动生成目录
 \addbibresource{../main.bib}
@@ -58,23 +59,22 @@
 
 \graphicspath{{../}}
 
-\title[基于RDMA的分布式内存存储数据传输优化]{基于RDMA的分布式内存存储数据传输优化}
+\title[基于RDMA的分布式内存存储数据传输优化]{基于RDMA的分布式内存存储\\数据传输优化}
 \author[兰靖]{(申请中山大学工学学士学位论文答辩报告)\\ \vskip 20pt 学~~~生：兰~~靖}
-\institute[中山大学~计算机学院~\&~计算机科学与技术]{\small \vskip 38pt 计算机学院~计算机科学与技术}
-\date{\small \vskip -17pt二〇二二年五月}
+\institute[中山大学~计算机学院~\&~计算机科学与技术]{\small \vskip 27pt 计算机学院~计算机科学与技术}
+\date{\small \vskip -30pt 二〇二二年五月}
 
 %% make title %%
 \frame{
         \titlepage
-        \vspace{-23mm}
+        \vspace{-25mm}
 }
 
-\subsection{目录}
-\frame {
-        \frametitle{目录}
-        %\begin{multicols}{2}
-        \tableofcontents[sections={<1-7>}]
-}
+% \subsection*{目录}
+% \frame {
+%         \frametitle{目录}
+%         \tableofcontents[sections={<1-7>}]
+% }
 
 \include{chap01}
 \include{chap02}
