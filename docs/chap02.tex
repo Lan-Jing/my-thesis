@@ -59,7 +59,7 @@ Plasma的这一特性和Redis等键值对数据库有很大的不同：配合引
 由于控制面、数据面上的任务解耦到了不同的进程，我们可以较为方便地对其软件架构进行改进。
 \autoref{fig:plasma_arch}展示了Plasma集群的组织结构。
 
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.75\textwidth]{image/chap02/plasma_arch.png}
     \caption{Plasma存储架构}
@@ -81,7 +81,7 @@ Plasma利用mmap映射机制对内存对象操作进行了性能优化。当前�
     \item 用户进程使用相同的文件描述符fd再次调用mmap。
 \end{enumerate}
 
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
     \includegraphics[width=0.6\textwidth]{image/chap02/mmap.png}
     \caption{mmap共享内存机制}
